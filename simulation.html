@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroEdge · Interactive Circuit Simulator</title>
+<meta name="description" content="TinkerCAD-style interactive circuit simulator for the NeuroEdge neuromorphic edge device, featuring real SNN processing and original component images.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117;--panel:#161b22;--surface:#21262d;--border:#30363d;
+  --text1:#e6edf3;--text2:#8b949e;--text3:#484f58;
+  --accent:#388bfd;--green:#3fb950;--yellow:#d29922;--red:#f85149;
+  --purple:#bc8cff;--orange:#d18616;--cyan:#39d353;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TOPBAR ──────────────────── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:50px;background:linear-gradient(180deg,#10151e,#0b0e14);border-bottom:1px solid var(--border);flex-shrink:0;}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;white-space:nowrap;}
+.logo{width:28px;height:28px;background:linear-gradient(135deg,#1158c7,#388bfd);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(56,139,253,.3);}
+.chip{font-size:9px;color:var(--text3);font-weight:400;font-family:var(--mono);padding:2px 8px;background:var(--surface);border-radius:4px;border:1px solid var(--border);}
+.topbar-center{display:flex;gap:6px;align-items:center;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.tbtn{font-size:11px;font-weight:600;padding:6px 14px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;font-family:var(--sans);background:var(--surface);color:var(--text2);letter-spacing:.02em;}
+.tbtn:hover{background:var(--border);color:var(--text1);}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tbtn.primary:hover{filter:brightness(1.15);}
+.tbtn.danger{background:var(--red);border-color:var(--red);color:#fff;}
+.tbtn.success{background:var(--green);border-color:var(--green);color:#fff;}
+.tbtn.warn{background:var(--yellow);border-color:var(--yellow);color:#000;}
+.tbtn.wire-on{background:rgba(188,140,255,.12);border-color:var(--purple);color:var(--purple);box-shadow:0 0 12px rgba(188,140,255,.15);}
+.pip{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:all .3s;}
+.pip.on{background:var(--green);box-shadow:0 0 10px rgba(63,185,80,.7);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+.status-chip{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text2);}
+
+/* ── WORKSPACE ───────────────── */
+.workspace{display:flex;flex:1;overflow:hidden;}
+
+/* ── LEFT PANEL ──────────────── */
+.left-panel{width:200px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-title{padding:10px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);border-bottom:1px solid var(--border);flex-shrink:0;}
+.comp-list{flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;display:flex;flex-direction:column;gap:4px;}
+.comp-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:grab;background:var(--surface);transition:all .15s;user-select:none;}
+.comp-item:hover{border-color:var(--accent);background:rgba(56,139,253,.06);}
+.comp-item:active{cursor:grabbing;transform:scale(.97);}
+.ci-thumb{width:32px;height:32px;border-radius:4px;object-fit:contain;flex-shrink:0;background:var(--bg);padding:2px;}
+.ci-info{min-width:0;}
+.ci-name{font-size:11px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-sub{font-size:9px;color:var(--text3);font-family:var(--mono);}
+
+/* ── CANVAS ──────────────────── */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:#080c14;}
+.canvas-wrap::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;}
+#simCanvas{position:absolute;top:0;left:0;}
+.zoom-btns{position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;gap:4px;}
+.zbtn{width:32px;height:32px;background:rgba(22,27,34,.85);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.zbtn:hover{background:var(--surface);color:var(--text1);}
+
+/* ── RIGHT PANEL ─────────────── */
+.right-panel{width:290px;flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid var(--border);background:var(--panel);}
+.rtabs{display:flex;border-bottom:1px solid var(--border);}
+.rtab{flex:1;padding:11px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:.06em;transition:all .15s;}
+.rtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.rpanel-content{flex:1;overflow-y:auto;padding:14px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.ctrl-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.ctrl-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.ctrl-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--surface);flex-shrink:0;}
+.ctrl-name{font-size:12px;font-weight:600;}
+.ctrl-pin{font-size:9px;color:var(--text3);font-family:var(--mono);}
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.slider-label{font-size:10px;color:var(--text2);width:55px;flex-shrink:0;}
+.slider-input{flex:1;height:3px;-webkit-appearance:none;appearance:none;background:var(--surface);border-radius:2px;outline:none;}
+.slider-input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 6px rgba(56,139,253,.5);}
+.slider-val{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:36px;text-align:right;}
+.pir-btn{width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--sans);}
+.pir-btn.fired{background:rgba(212,153,34,.12);border-color:var(--yellow);color:var(--yellow);box-shadow:0 0 12px rgba(212,153,34,.2);}
+
+/* ── LCD Widget ──────────────── */
+.lcd-widget{background:#0f3022;border:2px solid #1a5c38;border-radius:6px;padding:10px 14px;margin-bottom:10px;}
+.lcd-title{font-size:9px;color:#4ade80;opacity:.5;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.lcd-inner{background:#064020;border:1px solid #0a5830;border-radius:4px;padding:8px 10px;}
+.lcd-line{color:#4ade80;text-shadow:0 0 8px rgba(74,222,128,.5);letter-spacing:.08em;min-height:18px;font-family:var(--mono);font-size:13px;white-space:nowrap;overflow:hidden;}
+
+/* ── LED + Buzzer Indicators ── */
+.output-row{display:flex;gap:12px;justify-content:center;align-items:flex-end;padding:8px 0;}
+.led-ind{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.led-dot{width:20px;height:20px;border-radius:50%;border:2px solid;transition:all .3s;}
+.led-dot.off{opacity:.15;}
+.led-dot.on{opacity:1;}
+.led-dot.g{background:#22c55e;border-color:#16a34a;} .led-dot.g.on{box-shadow:0 0 14px #22c55e,0 0 30px rgba(34,197,94,.4);}
+.led-dot.y{background:#eab308;border-color:#ca8a04;} .led-dot.y.on{box-shadow:0 0 14px #eab308,0 0 30px rgba(234,179,8,.4);}
+.led-dot.r{background:#ef4444;border-color:#dc2626;} .led-dot.r.on{box-shadow:0 0 14px #ef4444,0 0 30px rgba(239,68,68,.4);}
+.led-lbl{font-size:8px;color:var(--text3);font-family:var(--mono);}
+.buz-badge{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);transition:all .3s;font-size:11px;font-weight:600;color:var(--text3);}
+.buz-badge.active{background:rgba(248,81,73,.1);border-color:var(--red);color:var(--red);box-shadow:0 0 10px rgba(248,81,73,.15);}
+
+/* ── Scenario Select ─────────── */
+.select{font-size:11px;padding:5px 8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text1);font-family:var(--sans);cursor:pointer;outline:none;}
+.select:focus{border-color:var(--accent);}
+
+/* ── Serial ──────────────────── */
+.serial-out{height:100%;font-family:var(--mono);font-size:10px;background:#060a10;border-radius:6px;padding:10px;overflow-y:auto;color:var(--green);line-height:1.7;border:1px solid var(--border);}
+.s-info{color:var(--text2);}.s-warn{color:var(--yellow);}.s-err{color:var(--red);}
+.s-spike{color:var(--purple);}.s-ok{color:var(--green);}.s-power{color:#39c5cf;}
+
+/* ── Verify ──────────────────── */
+.wc-panel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.wc-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.wc-row:last-child{border-bottom:none;}
+.wc-d{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.wc-d.ok{background:var(--green);}.wc-d.fail{background:var(--red);}.wc-d.pend{background:var(--text3);}
+.wc-l{flex:1;color:var(--text2);font-family:var(--mono);}
+.wc-s{font-weight:600;font-size:9px;}
+.wc-s.ok{color:var(--green);}.wc-s.fail{color:var(--red);}
+
+/* ── SNN Live Panel (small) ──── */
+.snn-mini{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;}
+.snn-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.snn-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;font-family:var(--mono);}
+.snn-label{width:50px;color:var(--text2);flex-shrink:0;}
+.snn-bar-track{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden;}
+.snn-bar-fill{height:100%;border-radius:3px;transition:width .1s;}
+.snn-val{width:40px;text-align:right;color:var(--text2);font-size:9px;}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══ -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="logo">⚡</div>NeuroEdge Simulator<span class="chip">v3 · SNN Engine</span>
+  </div>
+  <div class="topbar-center">
+    <select class="select" id="scenarioSel" title="Scenario">
+      <option value="normal_day">Normal Day</option>
+      <option value="fire_alarm">🔥 Fire Alarm</option>
+      <option value="cooking">🍳 Cooking</option>
+      <option value="hvac_failure">❄ HVAC Failure</option>
+      <option value="storm">⛈ Storm</option>
+    </select>
+
+    <button class="tbtn primary" id="btnRun" onclick="toggleSim()">▶ Start Simulation</button>
+  </div>
+  <div class="topbar-right">
+    <div class="status-chip"><div class="pip" id="pip"></div><span id="sysLbl">OFFLINE</span></div>
+    <span class="chip" id="clockChip">T+0s</span>
+    <button class="tbtn" onclick="resetAll()">↺ Reset</button>
+  </div>
+</div>
+
+<!-- ═══ WORKSPACE ═══ -->
+<div class="workspace">
+  <!-- LEFT: Component Library -->
+  <div class="left-panel">
+    <div class="panel-title">📦 Components</div>
+    <div class="comp-list" id="compList"></div>
+  </div>
+
+  <!-- CENTER: Canvas -->
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="simCanvas"></canvas>
+    <div class="zoom-btns">
+      <button class="zbtn" onclick="zoomCanvas(1.2)" title="Zoom In">+</button>
+      <button class="zbtn" onclick="zoomCanvas(1/1.2)" title="Zoom Out">−</button>
+      <button class="zbtn" onclick="fitView()" title="Fit View">⊡</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Tabs -->
+  <div class="right-panel">
+    <div class="rtabs">
+      <div class="rtab active" onclick="switchTab('controls',this)">Controls</div>
+      <div class="rtab" onclick="switchTab('serial',this)">Serial</div>
+    </div>
+
+    <!-- CONTROLS TAB -->
+    <div class="rpanel-content" id="tab-controls">
+      <!-- LCD -->
+      <div class="lcd-widget">
+        <div class="lcd-title">16×2 LCD Display</div>
+        <div class="lcd-inner"><div class="lcd-line" id="lcd1">NeuroEdge v3.0  </div><div class="lcd-line" id="lcd2">Status: OFFLINE </div></div>
+      </div>
+
+      <!-- LEDs + Buzzer -->
+      <div class="ctrl-card">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Actuators</div>
+        <div class="output-row">
+          <div class="led-ind"><div class="led-dot g off" id="ledG"></div><div class="led-lbl">D12</div></div>
+          <div class="led-ind"><div class="led-dot y off" id="ledY"></div><div class="led-lbl">D26</div></div>
+          <div class="led-ind"><div class="led-dot r off" id="ledR"></div><div class="led-lbl">D25</div></div>
+        </div>
+        <div class="buz-badge" id="buzBadge"><span>🔔</span><span id="buzText">Buzzer: Silent</span></div>
+      </div>
+
+      <!-- SNN Mini Visualization -->
+      <div class="snn-mini">
+        <div class="snn-title">SNN Neural State · 4→8→3</div>
+        <div id="snnBars"></div>
+      </div>
+
+      <!-- Power Stats -->
+      <div class="ctrl-card">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Power Budget</div>
+        <div class="snn-row"><span class="snn-label" style="color:var(--cyan);">Current</span><span class="snn-val" id="pwCur" style="color:var(--cyan);width:auto;">8.5 µW</span></div>
+        <div class="snn-row"><span class="snn-label">Total</span><span class="snn-val" id="pwTot" style="width:auto;">0.00 mJ</span></div>
+        <div class="snn-row"><span class="snn-label">Savings</span><span class="snn-val" id="pwSav" style="color:var(--green);width:auto;">0.0%</span></div>
+      </div>
+
+      <!-- PIR -->
+      <div class="ctrl-card">
+        <div class="ctrl-header"><div class="ctrl-icon" style="color:var(--yellow)">📡</div><div><div class="ctrl-name">HC-SR501 PIR</div><div class="ctrl-pin">GPIO14 · Digital</div></div></div>
+        <button class="pir-btn" id="pirBtn" onmousedown="pirDown()" onmouseup="pirUp()" onmouseleave="pirUp()" ontouchstart="pirDown()" ontouchend="pirUp()">👆 Hold to Simulate Motion</button>
+      </div>
+      <!-- DHT22 -->
+      <div class="ctrl-card">
+        <div class="ctrl-header"><div class="ctrl-icon" style="color:var(--green)">🌡</div><div><div class="ctrl-name">DHT22</div><div class="ctrl-pin">GPIO4 · Digital</div></div></div>
+        <div class="slider-row"><span class="slider-label">Temp °C</span><input class="slider-input" type="range" min="-10" max="60" step="0.5" value="25" id="slTemp"><span class="slider-val" id="vTemp">25.0</span></div>
+        <div class="slider-row"><span class="slider-label">Humid %</span><input class="slider-input" type="range" min="0" max="100" step="1" value="55" id="slHumid"><span class="slider-val" id="vHumid">55</span></div>
+      </div>
+      <!-- MQ-135 -->
+      <div class="ctrl-card">
+        <div class="ctrl-header"><div class="ctrl-icon" style="color:var(--purple)">🧪</div><div><div class="ctrl-name">MQ-135 Gas</div><div class="ctrl-pin">GPIO34 · Analog</div></div></div>
+        <div class="slider-row"><span class="slider-label">PPM</span><input class="slider-input" type="range" min="200" max="2000" step="10" value="400" id="slGas"><span class="slider-val" id="vGas">400</span></div>
+      </div>
+      <!-- Speed -->
+      <div class="ctrl-card">
+        <div class="slider-row"><span class="slider-label">Speed</span><input class="slider-input" type="range" min="0.2" max="5" step="0.1" value="1" id="slSpeed"><span class="slider-val" id="vSpeed">1.0×</span></div>
+      </div>
+    </div>
+
+
+
+    <!-- SERIAL TAB -->
+    <div class="rpanel-content" id="tab-serial" style="display:none;padding:8px;height:100%;">
+      <div class="serial-out" id="serialOut" style="height:calc(100% - 10px);"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+// FULL SNN ENGINE (identical to dashboard.js)
+// ══════════════════════════════════════════════════════════════
+class LIFNeuron{constructor(threshold=1,decay=.9,refractoryPeriod=3){this.membranePotential=0;this.threshold=threshold;this.decay=decay;this.refractoryPeriod=refractoryPeriod;this.refractoryCounter=0;this.spiked=false;this.spikeHistory=[];this.maxHistory=100;}step(inputCurrent){this.spiked=false;if(this.refractoryCounter>0){this.refractoryCounter--;this.membranePotential*=.5;this.spikeHistory.push(false);if(this.spikeHistory.length>this.maxHistory)this.spikeHistory.shift();return false;}this.membranePotential=this.decay*this.membranePotential+inputCurrent;if(this.membranePotential>=this.threshold){this.spiked=true;this.membranePotential=0;this.refractoryCounter=this.refractoryPeriod;}this.spikeHistory.push(this.spiked);if(this.spikeHistory.length>this.maxHistory)this.spikeHistory.shift();return this.spiked;}getFiringRate(w=20){const r=this.spikeHistory.slice(-w);return r.length===0?0:r.filter(s=>s).length/r.length;}reset(){this.membranePotential=0;this.refractoryCounter=0;this.spiked=false;this.spikeHistory=[];}}
+
+class SpikeEncoder{rateEncode(v,min,max,maxR=.8){const n=Math.max(0,Math.min(1,(v-min)/(max-min)));return Math.random()<(n*maxR)?1:0;}deltaEncode(c,p,t=.5){return Math.abs(c-p)>t?1:0;}encode(v,min,max,pv,dt){return Math.min(1,this.rateEncode(v,min,max,.6)*.4+this.deltaEncode(v,pv,dt)*.8);}}
+
+class SpikingNeuralNetwork{constructor(){this.inputNeurons=Array.from({length:4},()=>new LIFNeuron(.8,.85,2));this.hiddenNeurons=Array.from({length:8},()=>new LIFNeuron(1,.9,3));this.outputNeurons=Array.from({length:3},()=>new LIFNeuron(1.2,.88,4));this.weightsIH=[[.7,.6,.1,0,.1,0,.2,.1],[.1,0,.7,.6,0,.1,.1,.2],[0,.2,0,.1,.8,.7,.1,0],[.2,.1,.1,.2,0,.1,.7,.8]];this.weightsHO=[[.5,.3,.1],[.4,.4,.2],[.5,.3,.1],[.4,.4,.2],[.1,.5,.6],[.2,.4,.5],[.1,.4,.7],[.2,.3,.6]];this.allNeurons=[...this.inputNeurons,...this.hiddenNeurons,...this.outputNeurons];}forward(spikeInputs){const iS=spikeInputs.map((c,i)=>this.inputNeurons[i].step(c)?1:0);const hC=new Array(8).fill(0);for(let i=0;i<4;i++)for(let h=0;h<8;h++)hC[h]+=iS[i]*this.weightsIH[i][h];const hS=hC.map((c,h)=>this.hiddenNeurons[h].step(c)?1:0);const oC=new Array(3).fill(0);for(let h=0;h<8;h++)for(let o=0;o<3;o++)oC[o]+=hS[h]*this.weightsHO[h][o];const oS=oC.map((c,o)=>this.outputNeurons[o].step(c)?1:0);const p=this.outputNeurons.map(n=>n.membranePotential);const mx=p.indexOf(Math.max(...p));const t=p.reduce((a,b)=>a+Math.abs(b),0)||1;const conf=p.map(v=>Math.abs(v)/t);return{classIndex:mx,classification:['normal','anomaly','alert'][mx],confidences:conf,outputSpikes:oS,hiddenSpikes:hS,inputSpikes:iS};}getAllMembranePotentials(){return this.allNeurons.map(n=>n.membranePotential);}getAllFiringRates(){return this.allNeurons.map(n=>n.getFiringRate());}reset(){this.allNeurons.forEach(n=>n.reset());}}
+
+class HomeostaticRegulator{constructor(){this.highRate=.8;this.lowRate=.05;this.adjustFactor=.05;this.adaptInterval=50;this.tickCounter=0;}adapt(neurons){this.tickCounter++;if(this.tickCounter%this.adaptInterval!==0)return;neurons.forEach(n=>{const r=n.getFiringRate(30);if(r>this.highRate)n.threshold*=(1+this.adjustFactor);else if(r<this.lowRate){n.threshold*=(1-this.adjustFactor);n.threshold=Math.max(.3,n.threshold);}});}}
+
+class SensorEngine{constructor(){this.time=0;this.scenario='normal_day';this.anomalyInjections={};this.prev={temperature:25,humidity:55,motion:0,airQuality:400};}_noise(s){const u1=Math.random(),u2=Math.random();return s*Math.sqrt(-2*Math.log(u1||.001))*Math.cos(2*Math.PI*u2);}tick(dt=1){this.time+=dt;const t=this.time;let d;switch(this.scenario){case'fire_alarm':d=this._fire(t);break;case'cooking':d=this._cook(t);break;case'hvac_failure':d=this._hvac(t);break;case'storm':d=this._storm(t);break;default:d=this._normal(t);}for(const[s,sv]of Object.entries(this.anomalyInjections)){if(s==='temperature')d.temperature+=sv*20;if(s==='humidity')d.humidity+=sv*30;if(s==='motion')d.motion=sv>.5?1:d.motion;if(s==='airQuality')d.airQuality+=sv*500;}d.temperature=Math.max(-10,Math.min(80,d.temperature));d.humidity=Math.max(0,Math.min(100,d.humidity));d.motion=d.motion>.5?1:0;d.airQuality=Math.max(0,Math.min(2000,d.airQuality));this.prev={...d};return d;}_normal(t){const p=(t%300)/300*Math.PI*2;return{temperature:25+7*Math.sin(p)+this._noise(.3),humidity:60-15*Math.sin(p)+this._noise(1.5),motion:Math.random()<.05?1:0,airQuality:Math.max(200,Math.min(700,this.prev.airQuality+this._noise(5)-.1*(this.prev.airQuality-400)))};}_fire(t){const r=Math.min(1,t/60);return{temperature:25+r*45+this._noise(2),humidity:30-r*20+this._noise(2),motion:Math.random()<(.1+r*.6)?1:0,airQuality:400+r*1200+this._noise(30)};}_cook(t){const p=Math.sin(t*.1);return{temperature:28+8*Math.max(0,p)+this._noise(.5),humidity:65+15*Math.max(0,p)+this._noise(2),motion:Math.random()<.3?1:0,airQuality:450+200*Math.max(0,p)+this._noise(15)};}_hvac(t){const r=Math.min(1,t/120);return{temperature:22+r*18+this._noise(.5),humidity:45+r*35+this._noise(2),motion:Math.random()<.02?1:0,airQuality:380+r*150+this._noise(10)};}_storm(t){const l=Math.random()<.08;return{temperature:18-3*Math.sin(t*.05)+this._noise(1),humidity:85+10*Math.sin(t*.1)+this._noise(3),motion:l?1:Math.random()<.15?1:0,airQuality:350+(l?200:0)+this._noise(10)};}setScenario(n){this.scenario=n;this.time=0;this.anomalyInjections={};}}
+
+class PowerTracker{constructor(){this.T0=8.5;this.T1=150;this.T2=2200;this.ADC=3;this.SPIKE=.1;this.totalE=0;this.alwaysE=0;this.curP=this.T0;this.history=[];this.maxH=300;this.ticks=0;}recordTick(tier,spikes,dtMs=1000){this.ticks++;const dtS=dtMs/1000;let pw=this.T0+this.ADC*4+this.SPIKE*spikes;if(tier>=1)pw+=this.T1;if(tier>=2)pw+=this.T2;this.curP=pw;this.totalE+=pw*dtS;this.alwaysE+=(this.T2+this.ADC*4)*dtS;this.history.push({tick:this.ticks,tier,power:pw});if(this.history.length>this.maxH)this.history.shift();return pw;}getSavings(){return this.alwaysE===0?0:((1-this.totalE/this.alwaysE)*100);}reset(){this.totalE=0;this.alwaysE=0;this.curP=this.T0;this.history=[];this.ticks=0;}}
+
+class NeuroCore{constructor(){this.encoder=new SpikeEncoder();this.snn=new SpikingNeuralNetwork();this.regulator=new HomeostaticRegulator();this.power=new PowerTracker();this.spikeBuffer=[];this.maxBuf=200;this.prev={temperature:25,humidity:55,motion:0,airQuality:400};this.params={temperature:[10,60,2],humidity:[20,95,5],motion:[0,1,.5],airQuality:[200,1500,50]};}process(sd){const sensors=['temperature','humidity','motion','airQuality'];const currents=sensors.map(s=>{const[min,max,dt]=this.params[s];return this.encoder.encode(sd[s],min,max,this.prev[s],dt);});const r=this.snn.forward(currents);let tier=0;if(r.classification==='anomaly')tier=1;if(r.classification==='alert')tier=2;const totalSpikes=[...r.inputSpikes,...r.hiddenSpikes,...r.outputSpikes].filter(s=>s).length;const pw=this.power.recordTick(tier,totalSpikes);this.regulator.adapt(this.snn.allNeurons);this.prev={...sd};return{spikes:{temperature:r.inputSpikes[0],humidity:r.inputSpikes[1],motion:r.inputSpikes[2],airQuality:r.inputSpikes[3]},tier,classification:r.classification,confidences:r.confidences,membranePotentials:this.snn.getAllMembranePotentials(),firingRates:this.snn.getAllFiringRates(),power_uW:pw,totalEnergy_uJ:this.power.totalE,savings:this.power.getSavings(),avgPower:this.power.ticks===0?0:this.power.totalE/this.power.ticks,inputSpikes:r.inputSpikes,hiddenSpikes:r.hiddenSpikes,outputSpikes:r.outputSpikes};}reset(){this.snn.reset();this.power.reset();this.spikeBuffer=[];this.prev={temperature:25,humidity:55,motion:0,airQuality:400};}}
+
+// ══════════════════════════════════════════════════════════════
+// COMPONENT DEFINITIONS & IMAGE LOADING
+// ══════════════════════════════════════════════════════════════
+const DEFS = [
+  { id:'esp32',  label:'ESP32 DevKit V1', sub:'30-Pin MCU',      img:'assets/esp32_devkit.png', w:120, h:280 },
+  { id:'pir',    label:'HC-SR501 PIR',    sub:'Motion · GPIO14', img:'assets/pir.svg',        w:70,  h:70  },
+  { id:'dht22',  label:'DHT22',           sub:'Temp/Hum · GPIO4',img:'assets/dht.svg',        w:50,  h:80  },
+  { id:'mq135',  label:'MQ-135 Gas',      sub:'Analog · GPIO34', img:'assets/mq.svg',         w:70,  h:70  },
+  { id:'lcd',    label:'LCD 16×2 (I2C)',  sub:'SDA:21 SCL:22',   img:'assets/lcd.svg',        w:180, h:80  },
+  { id:'buzzer', label:'Active Buzzer',   sub:'Via Transistor',  img:'assets/buzzer.svg',     w:56,  h:56  },
+  { id:'trn',    label:'2N2222 NPN',      sub:'Base · GPIO27',   img:'assets/transistor.svg', w:30,  h:34  },
+  { id:'led_g',  label:'Green LED',       sub:'GPIO12 · 330Ω',  img:'assets/led_red.svg',    w:22,  h:44  },
+  { id:'led_y',  label:'Yellow LED',      sub:'GPIO26 · 330Ω',  img:'assets/led_red.svg',    w:22,  h:44  },
+  { id:'led_r',  label:'Red LED',         sub:'GPIO25 · 330Ω',  img:'assets/led_red.svg',    w:22,  h:44  },
+];
+
+// Load images
+const images = {};
+let imagesLoaded = 0;
+const totalImages = DEFS.length;
+DEFS.forEach(d => {
+  const im = new Image();
+  im.onload = () => { imagesLoaded++; };
+  im.onerror = () => { imagesLoaded++; };
+  im.src = d.img;
+  images[d.id] = im;
+});
+
+// Pin definitions per component type
+const PIN_DEFS = {
+  // Pin offsets calibrated to the real ESP32 DevKit V1 photo.
+  // The pin headers in the image run from ~38% to ~92% of the board height.
+  // 15 pins per side, evenly spaced within that region.
+  esp32: (() => {
+    const pinStart = 0.38, pinEnd = 0.92;
+    const pOff = (i) => pinStart + i * (pinEnd - pinStart) / 14; // i: 0..14
+    const L = ['EN','VP','VN','D34','D35','D32','D33','D25','D26','D27','D14','D12','D13','GND_L','VIN'];
+    const R = ['D23','D22','TX0','RX0','D21','D19','D18','D5','TX2','RX2','D4','D2','D15','GND_R','S3V3'];
+    return [
+      ...L.map((k,i) => ({k, s:'L', o:pOff(i)})),
+      ...R.map((k,i) => ({k, s:'R', o:pOff(i)})),
+    ];
+  })(),
+  pir:    [{k:'VCC',s:'B',o:.2},{k:'OUT',s:'B',o:.5},{k:'GND',s:'B',o:.8}],
+  dht22:  [{k:'VCC',s:'B',o:.15},{k:'DATA',s:'B',o:.38},{k:'NC',s:'B',o:.62},{k:'GND',s:'B',o:.85}],
+  mq135:  [{k:'VCC',s:'B',o:.2},{k:'GND',s:'B',o:.5},{k:'AO',s:'B',o:.8}],
+  lcd:    [{k:'GND',s:'B',o:.12},{k:'VCC',s:'B',o:.25},{k:'SDA',s:'B',o:.38},{k:'SCL',s:'B',o:.51}],
+  buzzer: [{k:'POS',s:'B',o:.3},{k:'NEG',s:'B',o:.7}],
+  trn:    [{k:'E',s:'B',o:.2},{k:'B',s:'B',o:.5},{k:'C',s:'B',o:.8}],
+  led_g:  [{k:'A',s:'T',o:.5},{k:'K',s:'B',o:.5}],
+  led_y:  [{k:'A',s:'T',o:.5},{k:'K',s:'B',o:.5}],
+  led_r:  [{k:'A',s:'T',o:.5},{k:'K',s:'B',o:.5}],
+};
+
+function getPins(type, x, y, w, h) {
+  const pins = {};
+  (PIN_DEFS[type]||[]).forEach(d => {
+    let px,py;
+    if(d.s==='L'){px=x;py=y+d.o*h;}
+    if(d.s==='R'){px=x+w;py=y+d.o*h;}
+    if(d.s==='T'){px=x+d.o*w;py=y;}
+    if(d.s==='B'){px=x+d.o*w;py=y+h;}
+    pins[d.k] = {x:px, y:py, label:d.k};
+  });
+  return pins;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let placed = [], wires = [], nextId = 1;
+let sensorEngine = new SensorEngine();
+let neuroCore    = new NeuroCore();
+let running = false, speed = 1, tickCount = 0;
+let pirActive = false, manualMode = false;
+let lastTime = 0, accumulator = 0;
+const ledState = { g: false, y: false, r: false, buz: false };
+const TICK_INTERVAL = 500;
+
+
+// Canvas
+const cvs = document.getElementById('simCanvas');
+const ctx = cvs.getContext('2d');
+const wrap = document.getElementById('canvasWrap');
+let scale = 1, panX = 0, panY = 0;
+let isDragging = false, dragTarget = null, dragOff = {x:0,y:0};
+let lastMX = 0, lastMY = 0;
+
+const tx=x=>x*scale+panX, ty=y=>y*scale+panY, ts=s=>s*scale;
+const wx=sx=>(sx-panX)/scale, wy=sy=>(sy-panY)/scale;
+
+function resizeCanvas(){cvs.width=wrap.clientWidth;cvs.height=wrap.clientHeight;}
+window.addEventListener('resize',resizeCanvas);
+
+function zoomCanvas(f){const cx=cvs.width/2,cy=cvs.height/2,old=scale;scale=Math.max(.15,Math.min(5,scale*f));panX=cx-(cx-panX)*(scale/old);panY=cy-(cy-panY)*(scale/old);}
+function fitView(){scale=.85;panX=60;panY=20;}
+
+// ══════════════════════════════════════════════════════════════
+// DRAWING
+// ══════════════════════════════════════════════════════════════
+function dRect(x,y,w,h,fill,stroke,r=0){ctx.beginPath();if(r>0)ctx.roundRect(tx(x),ty(y),ts(w),ts(h),ts(r));else ctx.rect(tx(x),ty(y),ts(w),ts(h));if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=ts(1.5);ctx.stroke();}}
+function dText(t,x,y,size,color,align='center',weight='500'){ctx.font=`${weight} ${ts(size)}px 'JetBrains Mono'`;ctx.fillStyle=color;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(t,tx(x),ty(y));}
+function dPin(x,y,color='#fbbf24',r=3.5){ctx.beginPath();ctx.arc(tx(x),ty(y),ts(r),0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=ts(.5);ctx.stroke();}
+
+function orthoRoute(ax,ay,bx,by){const mx=ax+(bx-ax)*.5;return[[ax,ay],[mx,ay],[mx,by],[bx,by]];}
+
+function dWire(pts,color,glow=false){
+  if(pts.length<2)return;
+  if(glow){ctx.save();ctx.shadowColor=color;ctx.shadowBlur=ts(6);}
+  ctx.beginPath();ctx.moveTo(tx(pts[0][0]),ty(pts[0][1]));
+  for(let i=1;i<pts.length;i++)ctx.lineTo(tx(pts[i][0]),ty(pts[i][1]));
+  ctx.strokeStyle=color;ctx.lineWidth=ts(2.5);ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+  if(glow)ctx.restore();
+}
+
+function drawComp(c) {
+  const {x,y,w,h,type} = c;
+  const im = images[type];
+  // Draw the SVG image
+  if (im && im.complete && im.naturalWidth > 0) {
+    ctx.drawImage(im, tx(x), ty(y), ts(w), ts(h));
+  } else {
+    // Fallback rectangle
+    dRect(x,y,w,h,'#1e293b','#475569',4);
+    dText(type, x+w/2, y+h/2, 9, '#e6edf3');
+  }
+
+  // LCD live screen overlay
+  if (type === 'lcd') {
+    const sx = x + w * 0.08, sy = y + h * 0.12;
+    const sw = w * 0.84, sh = h * 0.62;
+    if (running) {
+      dRect(sx, sy, sw, sh, '#86efac', null, 3);
+      const l1 = (document.getElementById('lcd1')?.innerText || '').padEnd(16).substring(0,16);
+      const l2 = (document.getElementById('lcd2')?.innerText || '').padEnd(16).substring(0,16);
+      dText(l1, sx + 4, sy + sh * 0.32, 9, '#064e3b', 'left', '700');
+      dText(l2, sx + 4, sy + sh * 0.72, 9, '#064e3b', 'left', '700');
+    } else {
+      dRect(sx, sy, sw, sh, '#0a2818', '#0d3320', 3);
+      dText('OFFLINE', x + w/2, y + h * 0.43, 8, '#1a5c38');
+    }
+  }
+
+  // LED glow overlay on canvas
+  if (type === 'led_g' || type === 'led_y' || type === 'led_r') {
+    const colorMap = { led_g: '#22c55e', led_y: '#eab308', led_r: '#ef4444' };
+    const stateMap = { led_g: 'g', led_y: 'y', led_r: 'r' };
+    const isOn = running && ledState[stateMap[type]];
+    const col = colorMap[type];
+    const cx = x + w / 2, cy = y + h * 0.35;
+    if (isOn) {
+      // Outer glow
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(tx(cx), ty(cy), ts(28), 0, Math.PI * 2);
+      const grd = ctx.createRadialGradient(tx(cx), ty(cy), 0, tx(cx), ty(cy), ts(28));
+      grd.addColorStop(0, col + 'aa');
+      grd.addColorStop(0.4, col + '55');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fill();
+      // Bright core
+      ctx.beginPath();
+      ctx.arc(tx(cx), ty(cy), ts(8), 0, Math.PI * 2);
+      ctx.fillStyle = col;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = ts(16);
+      ctx.fill();
+      ctx.restore();
+    } else {
+      // Dim indicator
+      ctx.beginPath();
+      ctx.arc(tx(cx), ty(cy), ts(6), 0, Math.PI * 2);
+      ctx.fillStyle = col + '20';
+      ctx.fill();
+    }
+  }
+
+  // Buzzer glow overlay
+  if (type === 'buzzer') {
+    const cx = x + w / 2, cy = y + h / 2;
+    if (running && ledState.buz) {
+      ctx.save();
+      // Pulsing ring
+      const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.01);
+      ctx.beginPath();
+      ctx.arc(tx(cx), ty(cy), ts(32 * pulse), 0, Math.PI * 2);
+      const grd = ctx.createRadialGradient(tx(cx), ty(cy), 0, tx(cx), ty(cy), ts(32));
+      grd.addColorStop(0, 'rgba(239,68,68,0.35)');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fill();
+      // Core
+      ctx.beginPath();
+      ctx.arc(tx(cx), ty(cy), ts(10), 0, Math.PI * 2);
+      ctx.fillStyle = '#ef4444';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = ts(12);
+      ctx.fill();
+      ctx.restore();
+      dText('🔊', cx, cy - h/2 - 6, 10, '#ef4444');
+    }
+  }
+
+  // Draw pin dots and labels
+  const pins = getPins(type, x, y, w, h);
+  for (const [k,p] of Object.entries(pins)) {
+    const isData = ['OUT','DATA','AO','SDA','SCL','A','B'].includes(k);
+    const isPwr  = ['VCC','VIN','S3V3','POS'].includes(k);
+    const isGnd  = ['GND','GND_L','GND_R','K','E','NEG'].includes(k);
+    const col = isPwr ? '#ef4444' : isGnd ? '#3b82f6' : isData ? '#fbbf24' : '#94a3b8';
+    dPin(p.x, p.y, col, type === 'esp32' ? 4 : 3.5);
+    // ESP32 pin labels drawn outside the board image for clarity
+    if (type === 'esp32') {
+      const pinDef = PIN_DEFS.esp32.find(d=>d.k===k);
+      if (pinDef?.s === 'L') {
+        // Draw label to the left of the pin, outside the board
+        dText(k, p.x - 8, p.y, 7, '#cbd5e1', 'right', '500');
+      }
+      if (pinDef?.s === 'R') {
+        // Draw label to the right of the pin, outside the board
+        dText(k, p.x + 8, p.y, 7, '#cbd5e1', 'left', '500');
+      }
+    }
+  }
+
+  // Component label below (not for ESP32 since the image has its own label)
+  const def = DEFS.find(d=>d.id===type);
+  if (def && type !== 'esp32') {
+    dText(def.label, x+w/2, y+h+10, 8, '#8b949e');
+  }
+}
+
+function drawWires() {
+  wires.forEach(w => {
+    const c1 = placed.find(p=>p.id===w.c1);
+    const c2 = placed.find(p=>p.id===w.c2);
+    if(!c1||!c2)return;
+    const pA = getPins(c1.type,c1.x,c1.y,c1.w,c1.h)[w.k1];
+    const pB = getPins(c2.type,c2.x,c2.y,c2.w,c2.h)[w.k2];
+    if(!pA||!pB)return;
+    dWire(orthoRoute(pA.x,pA.y,pB.x,pB.y), w.color, running);
+  });
+}
+
+function render() {
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  drawWires();
+  placed.forEach(drawComp);
+  requestAnimationFrame(render);
+}
+
+// ══════════════════════════════════════════════════════════════
+// DEFAULT LAYOUT
+// ══════════════════════════════════════════════════════════════
+function buildLayout() {
+  placed=[]; wires=[]; nextId=1;
+  const add = (type,x,y) => {
+    const def=DEFS.find(d=>d.id===type);
+    const c={id:nextId++,type,x,y,w:def.w,h:def.h};
+    placed.push(c); return c;
+  };
+  const esp  = add('esp32',  60,  50);
+  const pir  = add('pir',   320,  50);
+  const dht  = add('dht22', 430,  50);
+  const mq   = add('mq135', 530,  50);
+  const lcd  = add('lcd',   650,  40);
+  const ledG = add('led_g', 360, 260);
+  const ledY = add('led_y', 410, 260);
+  const ledR = add('led_r', 460, 260);
+  const buz  = add('buzzer',660, 240);
+  const trn  = add('trn',   670, 340);
+
+  const w = (c1,k1,c2,k2,col) => wires.push({id:nextId++,c1:c1.id,k1,c2:c2.id,k2,color:col});
+  // Power
+  w(esp,'VIN',pir,'VCC','#ef4444'); w(esp,'VIN',dht,'VCC','#ef4444');
+  w(esp,'VIN',mq,'VCC','#ef4444'); w(esp,'VIN',lcd,'VCC','#ef4444');
+  w(esp,'VIN',buz,'POS','#ef4444');
+  w(esp,'GND_L',pir,'GND','#3b82f6'); w(esp,'GND_L',dht,'GND','#3b82f6');
+  w(esp,'GND_L',mq,'GND','#3b82f6'); w(esp,'GND_L',lcd,'GND','#3b82f6');
+  w(esp,'GND_L',trn,'E','#3b82f6');
+  // Data
+  w(esp,'D14',pir,'OUT','#fbbf24'); w(esp,'D4',dht,'DATA','#4ade80');
+  w(esp,'D34',mq,'AO','#c084fc');
+  w(esp,'D21',lcd,'SDA','#67e8f9'); w(esp,'D22',lcd,'SCL','#38bdf8');
+  // LEDs
+  w(esp,'D12',ledG,'A','#4ade80'); w(esp,'D26',ledY,'A','#fde047');
+  w(esp,'D25',ledR,'A','#f87171');
+  w(ledG,'K',esp,'GND_L','#3b82f6');
+  w(ledY,'K',esp,'GND_L','#3b82f6');
+  w(ledR,'K',esp,'GND_L','#3b82f6');
+  // Buzzer circuit
+  w(esp,'D27',trn,'B','#fb923c');
+  w(trn,'C',buz,'NEG','#94a3b8');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MOUSE EVENTS
+// ══════════════════════════════════════════════════════════════
+function pickComp(gx,gy){for(let i=placed.length-1;i>=0;i--){const c=placed[i];if(gx>=c.x&&gx<=c.x+c.w&&gy>=c.y&&gy<=c.y+c.h)return c;}return null;}
+
+cvs.addEventListener('mousedown', e => {
+  const r=wrap.getBoundingClientRect();const sx=e.clientX-r.left,sy=e.clientY-r.top;
+  const gx=wx(sx),gy=wy(sy);
+  const comp=pickComp(gx,gy);
+  if(comp){dragTarget=comp;dragOff={x:gx-comp.x,y:gy-comp.y};placed.splice(placed.indexOf(comp),1);placed.push(comp);}
+  else{isDragging=true;lastMX=e.clientX;lastMY=e.clientY;}
+});
+window.addEventListener('mousemove', e => {
+  const r=wrap.getBoundingClientRect();
+  if(dragTarget){dragTarget.x=wx(e.clientX-r.left)-dragOff.x;dragTarget.y=wy(e.clientY-r.top)-dragOff.y;return;}
+  if(isDragging){panX+=e.clientX-lastMX;panY+=e.clientY-lastMY;lastMX=e.clientX;lastMY=e.clientY;}
+});
+window.addEventListener('mouseup',()=>{dragTarget=null;isDragging=false;});
+cvs.addEventListener('wheel', e => {
+  e.preventDefault();const r=wrap.getBoundingClientRect();
+  const sx=e.clientX-r.left,sy=e.clientY-r.top;
+  const f=e.deltaY<0?1.1:.9;panX=sx-(sx-panX)*f;panY=sy-(sy-panY)*f;
+  scale=Math.max(.15,Math.min(5,scale*f));
+},{passive:false});
+
+
+
+// Drop from library
+wrap.addEventListener('dragover',e=>e.preventDefault());
+wrap.addEventListener('drop',e=>{
+  e.preventDefault();const type=e.dataTransfer.getData('compType');if(!type)return;
+  const def=DEFS.find(d=>d.id===type);const r=wrap.getBoundingClientRect();
+  placed.push({id:nextId++,type,x:wx(e.clientX-r.left)-def.w/2,y:wy(e.clientY-r.top)-def.h/2,w:def.w,h:def.h});
+  logS(`Placed ${def.label}`,'s-info');
+});
+
+// ══════════════════════════════════════════════════════════════
+// SIMULATION ENGINE (uses real SensorEngine + NeuroCore)
+// ══════════════════════════════════════════════════════════════
+function toggleSim() {
+  running=!running;
+  const btn=document.getElementById('btnRun');
+  const pip=document.getElementById('pip');
+  const lbl=document.getElementById('sysLbl');
+  if(running){
+    btn.className='tbtn danger';btn.innerText='■ Stop';
+    pip.classList.add('on');lbl.innerText='RUNNING';
+    lastTime=performance.now();accumulator=0;
+    logS('═══ NeuroEdge SNN Engine Booted ═══','s-ok');
+    logS(`Scenario: ${sensorEngine.scenario} · Tick: ${TICK_INTERVAL}ms`,'s-power');
+    simLoop();
+  }else{
+    btn.className='tbtn primary';btn.innerText='▶ Start Simulation';
+    pip.classList.remove('on');lbl.innerText='OFFLINE';
+    logS('System stopped.','s-warn');
+    setLCD('NeuroEdge v3.0  ','Status: OFFLINE ');
+    updateActuators(0,false);
+  }
+}
+
+function simLoop() {
+  if(!running)return;
+  const now=performance.now();
+  const delta=now-lastTime;
+  lastTime=now;
+  accumulator+=delta*speed;
+  while(accumulator>=TICK_INTERVAL){
+    accumulator-=TICK_INTERVAL;
+    simulationTick();
+  }
+  requestAnimationFrame(simLoop);
+}
+
+function simulationTick() {
+  tickCount++;
+  // Build sensor data — mix auto engine + slider overrides if manual
+  let sd;
+  if (manualMode) {
+    sd = {
+      temperature: parseFloat(document.getElementById('slTemp').value),
+      humidity: parseFloat(document.getElementById('slHumid').value),
+      motion: pirActive ? 1 : 0,
+      airQuality: parseFloat(document.getElementById('slGas').value),
+    };
+  } else {
+    sd = sensorEngine.tick(1);
+    // Override motion with manual PIR
+    if (pirActive) sd.motion = 1;
+    // Update slider UI to reflect engine values
+    document.getElementById('slTemp').value = sd.temperature.toFixed(1);
+    document.getElementById('vTemp').innerText = sd.temperature.toFixed(1);
+    document.getElementById('slHumid').value = Math.round(sd.humidity);
+    document.getElementById('vHumid').innerText = Math.round(sd.humidity);
+    document.getElementById('slGas').value = Math.round(sd.airQuality);
+    document.getElementById('vGas').innerText = Math.round(sd.airQuality);
+  }
+
+  const result = neuroCore.process(sd);
+
+  // LCD
+  const l1 = `T:${sd.temperature.toFixed(1)}C H:${sd.humidity.toFixed(0)}%`;
+  const tierNames = ['IDLE','EVENT','ALERT'];
+  const l2 = `Tier ${result.tier} · ${tierNames[result.tier]}`;
+  setLCD(l1, l2);
+
+  // Actuators
+  updateActuators(result.tier, result.tier >= 2);
+
+  // SNN Bars
+  updateSNNBars(result.membranePotentials);
+
+  // Power
+  document.getElementById('pwCur').innerText = result.power_uW.toFixed(1) + ' µW';
+  document.getElementById('pwTot').innerText = (result.totalEnergy_uJ/1000).toFixed(2) + ' mJ';
+  document.getElementById('pwSav').innerText = result.savings.toFixed(1) + '%';
+
+  // Clock
+  document.getElementById('clockChip').innerText = `T+${tickCount}s`;
+
+  // Serial
+  if(result.tier >= 1 || tickCount % 10 === 0) {
+    const conf = result.confidences.map(c=>(c*100).toFixed(0)+'%').join('/');
+    logS(`[T${result.tier}] ${result.classification} · Conf:${conf} · ${result.power_uW.toFixed(0)}µW`, result.tier>=2?'s-err':result.tier>=1?'s-warn':'s-power');
+  }
+  if(result.spikes.temperature) logS(`⚡ Spike: Temperature=${sd.temperature.toFixed(1)}°C`,'s-spike');
+  if(result.spikes.motion) logS(`⚡ Spike: Motion detected`,'s-spike');
+  if(result.spikes.airQuality && sd.airQuality > 600) logS(`⚡ Spike: AirQ=${sd.airQuality.toFixed(0)}ppm`,'s-spike');
+
+  document.getElementById('sysLbl').innerText = ['SLEEP T0','TIER-1','TIER-2 🔴'][result.tier];
+}
+
+function updateActuators(tier, buzzer) {
+  ledState.g = running && tier === 0;
+  ledState.y = running && tier === 1;
+  ledState.r = running && tier >= 2;
+  ledState.buz = buzzer && running;
+  const gEl=document.getElementById('ledG'),yEl=document.getElementById('ledY'),rEl=document.getElementById('ledR');
+  gEl.className = `led-dot g ${ledState.g?'on':'off'}`;
+  yEl.className = `led-dot y ${ledState.y?'on':'off'}`;
+  rEl.className = `led-dot r ${ledState.r?'on':'off'}`;
+  const bEl=document.getElementById('buzBadge'),bTxt=document.getElementById('buzText');
+  if(ledState.buz){bEl.className='buz-badge active';bTxt.innerText='Buzzer: ACTIVE 🔊';}
+  else{bEl.className='buz-badge';bTxt.innerText='Buzzer: Silent';}
+}
+
+function setLCD(l1,l2){
+  document.getElementById('lcd1').innerText=(l1||'').padEnd(16).substring(0,16);
+  document.getElementById('lcd2').innerText=(l2||'').padEnd(16).substring(0,16);
+}
+
+function updateSNNBars(potentials) {
+  const el=document.getElementById('snnBars');
+  const labels=['Temp','Humid','Motion','AirQ','h0','h1','h2','h3','h4','h5','h6','h7','Normal','Anom','Alert'];
+  const colors=['#d97545','#4a9ec9','#b8bf3a','#58a65c','#7a6cb8','#7a6cb8','#7a6cb8','#7a6cb8','#7a6cb8','#7a6cb8','#7a6cb8','#7a6cb8','#3ddc84','#e8a835','#e85454'];
+  if(!el.children.length){
+    el.innerHTML=labels.map((l,i)=>`<div class="snn-row"><span class="snn-label" style="font-size:8px;">${l}</span><div class="snn-bar-track"><div class="snn-bar-fill" id="snb${i}" style="background:${colors[i]};width:2px;"></div></div></div>`).join('');
+  }
+  potentials.forEach((p,i)=>{
+    const bar=document.getElementById(`snb${i}`);
+    if(bar)bar.style.width=Math.max(2,Math.min(100,Math.abs(p)*100))+'%';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════════════════════
+function pirDown(){pirActive=true;document.getElementById('pirBtn').classList.add('fired');}
+function pirUp(){pirActive=false;document.getElementById('pirBtn').classList.remove('fired');}
+
+['slTemp','slHumid','slGas'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    manualMode=true;
+    if(id==='slTemp')document.getElementById('vTemp').innerText=parseFloat(e.target.value).toFixed(1);
+    if(id==='slHumid')document.getElementById('vHumid').innerText=e.target.value;
+    if(id==='slGas')document.getElementById('vGas').innerText=e.target.value;
+  });
+});
+document.getElementById('slSpeed').addEventListener('input',e=>{
+  speed=parseFloat(e.target.value);
+  document.getElementById('vSpeed').innerText=speed.toFixed(1)+'×';
+});
+document.getElementById('scenarioSel').addEventListener('change',e=>{
+  sensorEngine.setScenario(e.target.value);
+  manualMode=false;
+  logS(`Scenario: ${e.target.value.replace(/_/g,' ')}`,'s-ok');
+});
+
+
+
+function resetAll(){
+  if(running)toggleSim();
+  sensorEngine=new SensorEngine();neuroCore=new NeuroCore();
+  tickCount=0;manualMode=false;pirActive=false;
+  buildLayout();fitView();
+  document.getElementById('serialOut').innerHTML='';
+  document.getElementById('slTemp').value=25;document.getElementById('vTemp').innerText='25.0';
+  document.getElementById('slHumid').value=55;document.getElementById('vHumid').innerText='55';
+  document.getElementById('slGas').value=400;document.getElementById('vGas').innerText='400';
+  document.getElementById('clockChip').innerText='T+0s';
+  setLCD('NeuroEdge v3.0  ','Status: OFFLINE ');
+  updateActuators(0,false);
+  logS('System reset. Default circuit loaded.','s-info');
+}
+
+function logS(msg,cls='s-info'){
+  const out=document.getElementById('serialOut');
+  const d=document.createElement('div');d.className=cls;
+  const t=new Date();
+  d.innerText=`[${t.getMinutes().toString().padStart(2,'0')}:${t.getSeconds().toString().padStart(2,'0')}.${t.getMilliseconds().toString().padStart(3,'0')}] ${msg}`;
+  out.appendChild(d);if(out.children.length>200)out.removeChild(out.firstChild);out.scrollTop=out.scrollHeight;
+}
+
+function switchTab(id,el){
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.rpanel-content').forEach(c=>c.style.display='none');
+  el.classList.add('active');
+  document.getElementById('tab-'+id).style.display='block';
+}
+
+// ══════════════════════════════════════════════════════════════
+// LIBRARY UI
+// ══════════════════════════════════════════════════════════════
+function buildLibrary(){
+  const list=document.getElementById('compList');
+  DEFS.forEach(def=>{
+    const el=document.createElement('div');el.className='comp-item';el.draggable=true;
+    el.innerHTML=`<img class="ci-thumb" src="${def.img}" alt="${def.label}"><div class="ci-info"><div class="ci-name">${def.label}</div><div class="ci-sub">${def.sub}</div></div>`;
+    el.addEventListener('dragstart',ev=>ev.dataTransfer.setData('compType',def.id));
+    list.appendChild(el);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+buildLibrary();
+buildLayout();
+resizeCanvas();
+fitView();
+render();
+
+logS('NeuroEdge Simulator v3.0 ready.','s-ok');
+logS('Uses the same SNN Engine (LIF 4→8→3) as the main dashboard.','s-info');
+logS('SVG component images loaded from assets/.','s-info');
+logS('Select a scenario or adjust sliders, then click ▶ Start.','s-info');
+</script>
+</body>
+</html>

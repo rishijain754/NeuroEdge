@@ -3,239 +3,235 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="NeuroEdge — Neuromorphic Edge Device Simulator with Spiking Neural Networks, multi-sensor fusion, and microwatt power budgeting">
-  <title>NeuroEdge — Neuromorphic Edge Device Dashboard</title>
+  <meta name="description" content="NeuroEdge — Neuromorphic edge device simulator with spiking neural networks and microwatt power budgeting">
+  <title>NeuroEdge — Neuromorphic Edge Simulator</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%235b8def'/><path d='M30 70V40l20-15 20 15v30' stroke='white' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 </head>
 <body>
-  <!-- Animated neural grid background -->
-  <div class="neural-grid"></div>
 
-  <div class="app-container">
+<div class="app">
 
-    <!-- ═══════════ HEADER ═══════════ -->
-    <header class="header" id="header">
-      <div class="header-left">
-        <div class="logo-icon">🧠</div>
-        <div>
-          <h1 class="header-title">NeuroEdge</h1>
-          <p class="header-subtitle">Neuromorphic Edge Device Simulator</p>
-        </div>
+  <!-- ═══ Header ═══ -->
+  <header class="header" role="banner">
+    <div class="header-brand">
+      <div class="header-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><path d="M8 1L2 5v6l6 4 6-4V5L8 1zm0 2.5L12 6v4.5L8 13 4 10.5V6L8 3.5z"/></svg>
       </div>
-      <div class="header-right">
-        <div class="status-badge active">
-          <span class="status-dot"></span>
-          <span>Simulation Active</span>
+      <span class="header-title">NeuroEdge</span>
+    </div>
+
+    <div class="header-meta">
+      <a href="simulation.html" class="btn btn-standalone" style="margin-right:8px;">Open React Simulation ✨</a>
+      <div class="header-tier" id="headerTier">
+        <div class="tier-dots">
+          <div class="tier-dot t0" id="td0"></div>
+          <div class="tier-dot" id="td1"></div>
+          <div class="tier-dot" id="td2"></div>
         </div>
-        <div class="sim-clock" id="simClock">T+0s</div>
+        <span class="tier-label-text" id="tierText">Tier 0 · Idle</span>
       </div>
-    </header>
 
-    <!-- ═══════════ CONTROL BAR ═══════════ -->
-    <div class="control-bar" id="controlBar">
-      <button class="btn btn-primary" id="btnStartStop">▶ Start</button>
-      <button class="btn" id="btnReset">↺ Reset</button>
+      <div class="header-power">
+        <span class="header-power-val" id="hdrPower">8.5</span>
+        <span>µW</span>
+      </div>
 
-      <select class="scenario-select" id="scenarioSelect">
-        <option value="normal_day">📊 Normal Day</option>
-        <option value="fire_alarm">🔥 Fire Alarm</option>
-        <option value="cooking">🍳 Cooking</option>
-        <option value="hvac_failure">❄️ HVAC Failure</option>
-        <option value="storm">⛈️ Storm</option>
-      </select>
+      <span class="status-pip" id="statusPip" aria-label="Simulation status"></span>
+      <span class="header-clock" id="simClock">T+0s</span>
+    </div>
+  </header>
 
-      <button class="btn btn-danger" id="btnInjectFire">🔥 Inject Fire</button>
-      <button class="btn btn-warning" id="btnInjectCooking">🍳 Inject Cooking</button>
+  <!-- ═══ Controls ═══ -->
+  <div class="controls" role="toolbar" aria-label="Simulation controls">
+    <div class="controls-group">
+      <button class="btn active" id="btnStartStop">Start</button>
+      <button class="btn" id="btnReset">Reset</button>
+    </div>
 
-      <div class="speed-control">
-        <span>Speed:</span>
-        <input type="range" class="speed-slider" id="speedSlider" min="0.2" max="5" step="0.1" value="1">
-        <span id="speedValue" class="text-mono">1.0x</span>
+    <select class="select" id="scenarioSelect" aria-label="Scenario">
+      <option value="normal_day">Normal day</option>
+      <option value="fire_alarm">Fire alarm</option>
+      <option value="cooking">Cooking</option>
+      <option value="hvac_failure">HVAC failure</option>
+      <option value="storm">Storm</option>
+    </select>
+
+    <button class="btn btn-standalone btn-inject" id="btnInjectFire">Inject fire</button>
+
+    <div class="speed">
+      <span>Speed</span>
+      <input type="range" class="speed-range" id="speedSlider" min="0.2" max="5" step="0.1" value="1" aria-label="Simulation speed">
+      <span class="speed-val" id="speedValue">1.0×</span>
+    </div>
+  </div>
+
+  <!-- ═══ Dashboard Grid ═══ -->
+  <div class="grid" role="main">
+
+    <!-- Sensor: Temperature -->
+    <div class="panel sensor-panel" id="panelTemp">
+      <div class="sensor-row">
+        <div class="sensor-info">
+          <div class="sensor-name"><span class="dot" style="background:var(--color-temp)"></span> Temperature</div>
+          <div class="sensor-value">
+            <span id="val-temp">25.0</span>
+            <span class="sensor-unit" id="unit-temp">°C</span>
+          </div>
+        </div>
+        <div class="sensor-spike temp" id="spike-temp" aria-label="Spike indicator">—</div>
+      </div>
+      <div class="sensor-bar-wrap">
+        <div class="sensor-bar-track"><div class="sensor-bar-fill temp" id="bar-temp" style="width:30%"></div></div>
       </div>
     </div>
 
-    <!-- ═══════════ MAIN DASHBOARD GRID ═══════════ -->
-    <div class="dashboard-grid">
-
-      <!-- ─── Sensor Gauge: Temperature ─── -->
-      <div class="card sensor-card temp" id="sensorTemp">
-        <div class="card-title"><span class="icon">🌡️</span> Temperature</div>
-        <div class="gauge-ring">
-          <svg viewBox="0 0 130 130">
-            <circle class="gauge-bg" cx="65" cy="65" r="60" />
-            <circle class="gauge-fill" id="gauge-fill-temp" cx="65" cy="65" r="60"
-              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
-          </svg>
-          <div class="gauge-value">
-            <span class="gauge-number" id="gauge-num-temp">25.0</span>
-            <span class="gauge-unit" id="gauge-unit-temp">°C</span>
+    <!-- Sensor: Humidity -->
+    <div class="panel sensor-panel" id="panelHumid">
+      <div class="sensor-row">
+        <div class="sensor-info">
+          <div class="sensor-name"><span class="dot" style="background:var(--color-humid)"></span> Humidity</div>
+          <div class="sensor-value">
+            <span id="val-humid">55.0</span>
+            <span class="sensor-unit" id="unit-humid">%RH</span>
           </div>
         </div>
-        <span class="sensor-label">Temperature</span>
-        <div class="spike-indicator" id="spike-temp"></div>
+        <div class="sensor-spike humid" id="spike-humid" aria-label="Spike indicator">—</div>
       </div>
+      <div class="sensor-bar-wrap">
+        <div class="sensor-bar-track"><div class="sensor-bar-fill humid" id="bar-humid" style="width:55%"></div></div>
+      </div>
+    </div>
 
-      <!-- ─── Sensor Gauge: Humidity ─── -->
-      <div class="card sensor-card humidity" id="sensorHumidity">
-        <div class="card-title"><span class="icon">💧</span> Humidity</div>
-        <div class="gauge-ring">
-          <svg viewBox="0 0 130 130">
-            <circle class="gauge-bg" cx="65" cy="65" r="60" />
-            <circle class="gauge-fill" id="gauge-fill-humidity" cx="65" cy="65" r="60"
-              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
-          </svg>
-          <div class="gauge-value">
-            <span class="gauge-number" id="gauge-num-humidity">55.0</span>
-            <span class="gauge-unit" id="gauge-unit-humidity">%RH</span>
+    <!-- Sensor: Motion -->
+    <div class="panel sensor-panel" id="panelMotion">
+      <div class="sensor-row">
+        <div class="sensor-info">
+          <div class="sensor-name"><span class="dot" style="background:var(--color-motion)"></span> Motion</div>
+          <div class="sensor-value">
+            <span id="val-motion">Idle</span>
+            <span class="sensor-unit" id="unit-motion"></span>
           </div>
         </div>
-        <span class="sensor-label">Humidity</span>
-        <div class="spike-indicator" id="spike-humidity"></div>
+        <div class="sensor-spike motion" id="spike-motion" aria-label="Spike indicator">—</div>
       </div>
+      <div class="sensor-bar-wrap">
+        <div class="sensor-bar-track"><div class="sensor-bar-fill motion" id="bar-motion" style="width:0%"></div></div>
+      </div>
+    </div>
 
-      <!-- ─── Sensor Gauge: Motion ─── -->
-      <div class="card sensor-card motion" id="sensorMotion">
-        <div class="card-title"><span class="icon">🏃</span> Motion (PIR)</div>
-        <div class="gauge-ring">
-          <svg viewBox="0 0 130 130">
-            <circle class="gauge-bg" cx="65" cy="65" r="60" />
-            <circle class="gauge-fill" id="gauge-fill-motion" cx="65" cy="65" r="60"
-              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
-          </svg>
-          <div class="gauge-value">
-            <span class="gauge-number" id="gauge-num-motion">0</span>
-            <span class="gauge-unit" id="gauge-unit-motion">IDLE</span>
+    <!-- Sensor: Air Quality -->
+    <div class="panel sensor-panel" id="panelAir">
+      <div class="sensor-row">
+        <div class="sensor-info">
+          <div class="sensor-name"><span class="dot" style="background:var(--color-air)"></span> Air Quality</div>
+          <div class="sensor-value">
+            <span id="val-air">400</span>
+            <span class="sensor-unit" id="unit-air">PPM</span>
           </div>
         </div>
-        <span class="sensor-label">Motion</span>
-        <div class="spike-indicator" id="spike-motion"></div>
+        <div class="sensor-spike air" id="spike-air" aria-label="Spike indicator">—</div>
       </div>
-
-      <!-- ─── Sensor Gauge: Air Quality ─── -->
-      <div class="card sensor-card airquality" id="sensorAirQuality">
-        <div class="card-title"><span class="icon">🌫️</span> Air Quality</div>
-        <div class="gauge-ring">
-          <svg viewBox="0 0 130 130">
-            <circle class="gauge-bg" cx="65" cy="65" r="60" />
-            <circle class="gauge-fill" id="gauge-fill-airquality" cx="65" cy="65" r="60"
-              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
-          </svg>
-          <div class="gauge-value">
-            <span class="gauge-number" id="gauge-num-airquality">400</span>
-            <span class="gauge-unit" id="gauge-unit-airquality">PPM</span>
-          </div>
-        </div>
-        <span class="sensor-label">Air Quality (VOC)</span>
-        <div class="spike-indicator" id="spike-airquality"></div>
+      <div class="sensor-bar-wrap">
+        <div class="sensor-bar-track"><div class="sensor-bar-fill air" id="bar-air" style="width:20%"></div></div>
       </div>
+    </div>
 
-      <!-- ─── Tier Processing Indicator ─── -->
-      <div class="card tier-indicator" id="tierIndicator">
-        <div class="tier-node tier0 active" id="tier-node-0">
-          <div class="tier-circle">TIER 0</div>
-          <span class="tier-label">Always-On</span>
-          <span class="tier-power">~8.5 µW</span>
+    <!-- Spike Raster Plot -->
+    <div class="panel panel-raster">
+      <div class="panel-label">Spike Raster</div>
+      <div class="raster-wrap">
+        <canvas class="raster-canvas" id="spikeRasterCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Power Consumption -->
+    <div class="panel panel-power">
+      <div class="panel-label">Power</div>
+      <div class="power-top">
+        <div class="power-hero">
+          <div class="power-num" id="powerValue">8.5</div>
+          <div class="power-sub">µW current</div>
         </div>
-
-        <div class="tier-connector" id="tier-conn-01"></div>
-
-        <div class="tier-node tier1" id="tier-node-1">
-          <div class="tier-circle">TIER 1</div>
-          <span class="tier-label">Event Proc.</span>
-          <span class="tier-power">~150 µW</span>
-        </div>
-
-        <div class="tier-connector" id="tier-conn-12"></div>
-
-        <div class="tier-node tier2" id="tier-node-2">
-          <div class="tier-circle">TIER 2</div>
-          <span class="tier-label">Deep Analysis</span>
-          <span class="tier-power">~2.2 mW</span>
+        <div class="power-chart-wrap">
+          <canvas class="power-canvas" id="powerChartCanvas"></canvas>
         </div>
       </div>
-
-      <!-- ─── Spike Raster Plot ─── -->
-      <div class="card spike-raster-card" id="spikeRasterCard">
-        <div class="card-title"><span class="icon">⚡</span> Spike Raster Plot</div>
-        <div class="spike-raster-container">
-          <canvas class="spike-raster-canvas" id="spikeRasterCanvas"></canvas>
+      <div class="power-stats">
+        <div class="stat">
+          <div class="stat-val" id="statTotalEnergy">0.00 mJ</div>
+          <div class="stat-key">Total energy</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statAvgPower">0.0 µW</div>
+          <div class="stat-key">Avg power</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statSavings">0.0%</div>
+          <div class="stat-key">Savings</div>
         </div>
       </div>
+    </div>
 
-      <!-- ─── Power Consumption ─── -->
-      <div class="card power-card" id="powerCard">
-        <div class="card-title"><span class="icon">🔋</span> Power Consumption</div>
-        <div class="power-display">
-          <div class="power-main">
-            <div class="power-value" id="powerValue">8.5</div>
-            <div class="power-unit">µW (current)</div>
-          </div>
-          <div class="power-chart-container">
-            <canvas class="power-chart-canvas" id="powerChartCanvas"></canvas>
-          </div>
-        </div>
-        <div class="power-stats">
-          <div class="power-stat">
-            <div class="power-stat-value" id="statTotalEnergy">0.00 mJ</div>
-            <div class="power-stat-label">Total Energy</div>
-          </div>
-          <div class="power-stat">
-            <div class="power-stat-value" id="statAvgPower">0.0 µW</div>
-            <div class="power-stat-label">Average Power</div>
-          </div>
-          <div class="power-stat">
-            <div class="power-stat-value" id="statSavings">0.0%</div>
-            <div class="power-stat-label">Energy Savings</div>
-          </div>
+    <!-- SNN Topology -->
+    <div class="panel panel-topo">
+      <div class="panel-label">Network topology · 4 → 8 → 3</div>
+      <canvas class="topo-canvas" id="topologyCanvas"></canvas>
+    </div>
+
+    <!-- Event Log -->
+    <div class="panel panel-log">
+      <div class="panel-label">Event log</div>
+      <div class="log-list" id="alertFeed" role="log" aria-live="polite">
+        <div class="log-entry">
+          <span class="log-time">0s</span>
+          <span class="log-tag info">ready</span>
+          <span class="log-msg">System initialized. Press Start to begin.</span>
         </div>
       </div>
+    </div>
 
-      <!-- ─── SNN Topology Visualizer ─── -->
-      <div class="card topology-card" id="topologyCard">
-        <div class="card-title"><span class="icon">🔬</span> SNN Topology (4→8→3)</div>
-        <canvas class="topology-canvas" id="topologyCanvas"></canvas>
-      </div>
+    <!-- Membrane Potentials -->
+    <div class="panel panel-membrane">
+      <div class="panel-label">Membrane potentials · 15 neurons</div>
+      <div class="membrane-wrap" id="membraneBars"></div>
+    </div>
 
-      <!-- ─── Alert Feed ─── -->
-      <div class="card alert-feed-card" id="alertFeedCard">
-        <div class="card-title"><span class="icon">🚨</span> Event Log</div>
-        <div class="alert-feed" id="alertFeed">
-          <div class="alert-item normal">
-            <span class="alert-time">0s</span>
-            <span class="alert-severity normal">ready</span>
-            <span class="alert-message">NeuroEdge initialized. Press Start to begin simulation.</span>
-          </div>
+    <!-- Actuators (LCD & Buzzer) -->
+    <div class="panel panel-actuators">
+      <div class="panel-label">Actuators Output</div>
+      <div class="actuators-wrap" style="display:flex; flex-direction:column; gap:16px; margin-top:8px; justify-content:center; height:calc(100% - 24px);">
+        <div class="lcd-screen" style="background:#0c0f16; border:1px solid #1e2430; padding:12px; border-radius:4px; font-family:'JetBrains Mono', monospace; font-size:12px; color:#3ddc84; box-shadow:inset 0 0 10px rgba(61,220,132,0.1); text-shadow:0 0 5px rgba(61,220,132,0.5); text-align:center;">
+           <div id="lcdLine1">Tier: 0</div>
+           <div id="lcdLine2">IDLE MODE</div>
+        </div>
+        <div class="buzzer-status" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px; background:#0c0f16; border:1px solid #1e2430; border-radius:4px;">
+           <span style="font-size:10px; color:#8c95a8; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Buzzer</span>
+           <span id="buzzerState" style="font-size:14px; font-weight:600; color:#555e72;">Silent</span>
         </div>
       </div>
+    </div>
 
-      <!-- ─── Membrane Potential Bars ─── -->
-      <div class="card membrane-card" id="membraneCard">
-        <div class="card-title"><span class="icon">📊</span> Membrane Potentials — All 15 Neurons</div>
-        <div class="membrane-bars" id="membraneBars"></div>
+    <!-- Savings Footer -->
+    <div class="panel panel-savings">
+      <div class="savings-col">
+        <span class="savings-key">Neuromorphic</span>
+        <span class="savings-val" id="neuroEnergy">0.00 mJ</span>
       </div>
-
-      <!-- ─── Energy Savings Banner ─── -->
-      <div class="card savings-banner" id="savingsBanner">
-        <div>
-          <div class="savings-label">Neuromorphic Energy</div>
-          <div class="savings-detail" id="neuroEnergy">0.00 mJ</div>
-        </div>
-        <div class="vs-separator">vs</div>
-        <div>
-          <div class="savings-label">Always-On Energy</div>
-          <div class="savings-detail" id="alwaysOnEnergy">0.00 mJ</div>
-        </div>
-        <div>
-          <div class="savings-value" id="savingsPercent">0.0%</div>
-          <div class="savings-label">Power Savings</div>
-        </div>
+      <span class="savings-sep">vs</span>
+      <div class="savings-col">
+        <span class="savings-key">Always-on</span>
+        <span class="savings-val" id="alwaysOnEnergy">0.00 mJ</span>
       </div>
+      <div class="savings-col" style="text-align:right">
+        <span class="savings-hero" id="savingsPercent">0.0%</span>
+        <span class="savings-hero-label">power saved</span>
+      </div>
+    </div>
 
-    </div><!-- /dashboard-grid -->
+  </div>
+</div>
 
-  </div><!-- /app-container -->
-
-  <script src="dashboard.js"></script>
+<script src="dashboard.js"></script>
 </body>
 </html>
