@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NeuroEdge — Neuromorphic Edge Device Simulator with Spiking Neural Networks, multi-sensor fusion, and microwatt power budgeting">
+  <title>NeuroEdge — Neuromorphic Edge Device Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+  <!-- Animated neural grid background -->
+  <div class="neural-grid"></div>
+
+  <div class="app-container">
+
+    <!-- ═══════════ HEADER ═══════════ -->
+    <header class="header" id="header">
+      <div class="header-left">
+        <div class="logo-icon">🧠</div>
+        <div>
+          <h1 class="header-title">NeuroEdge</h1>
+          <p class="header-subtitle">Neuromorphic Edge Device Simulator</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-badge active">
+          <span class="status-dot"></span>
+          <span>Simulation Active</span>
+        </div>
+        <div class="sim-clock" id="simClock">T+0s</div>
+      </div>
+    </header>
+
+    <!-- ═══════════ CONTROL BAR ═══════════ -->
+    <div class="control-bar" id="controlBar">
+      <button class="btn btn-primary" id="btnStartStop">▶ Start</button>
+      <button class="btn" id="btnReset">↺ Reset</button>
+
+      <select class="scenario-select" id="scenarioSelect">
+        <option value="normal_day">📊 Normal Day</option>
+        <option value="fire_alarm">🔥 Fire Alarm</option>
+        <option value="cooking">🍳 Cooking</option>
+        <option value="hvac_failure">❄️ HVAC Failure</option>
+        <option value="storm">⛈️ Storm</option>
+      </select>
+
+      <button class="btn btn-danger" id="btnInjectFire">🔥 Inject Fire</button>
+      <button class="btn btn-warning" id="btnInjectCooking">🍳 Inject Cooking</button>
+
+      <div class="speed-control">
+        <span>Speed:</span>
+        <input type="range" class="speed-slider" id="speedSlider" min="0.2" max="5" step="0.1" value="1">
+        <span id="speedValue" class="text-mono">1.0x</span>
+      </div>
+    </div>
+
+    <!-- ═══════════ MAIN DASHBOARD GRID ═══════════ -->
+    <div class="dashboard-grid">
+
+      <!-- ─── Sensor Gauge: Temperature ─── -->
+      <div class="card sensor-card temp" id="sensorTemp">
+        <div class="card-title"><span class="icon">🌡️</span> Temperature</div>
+        <div class="gauge-ring">
+          <svg viewBox="0 0 130 130">
+            <circle class="gauge-bg" cx="65" cy="65" r="60" />
+            <circle class="gauge-fill" id="gauge-fill-temp" cx="65" cy="65" r="60"
+              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
+          </svg>
+          <div class="gauge-value">
+            <span class="gauge-number" id="gauge-num-temp">25.0</span>
+            <span class="gauge-unit" id="gauge-unit-temp">°C</span>
+          </div>
+        </div>
+        <span class="sensor-label">Temperature</span>
+        <div class="spike-indicator" id="spike-temp"></div>
+      </div>
+
+      <!-- ─── Sensor Gauge: Humidity ─── -->
+      <div class="card sensor-card humidity" id="sensorHumidity">
+        <div class="card-title"><span class="icon">💧</span> Humidity</div>
+        <div class="gauge-ring">
+          <svg viewBox="0 0 130 130">
+            <circle class="gauge-bg" cx="65" cy="65" r="60" />
+            <circle class="gauge-fill" id="gauge-fill-humidity" cx="65" cy="65" r="60"
+              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
+          </svg>
+          <div class="gauge-value">
+            <span class="gauge-number" id="gauge-num-humidity">55.0</span>
+            <span class="gauge-unit" id="gauge-unit-humidity">%RH</span>
+          </div>
+        </div>
+        <span class="sensor-label">Humidity</span>
+        <div class="spike-indicator" id="spike-humidity"></div>
+      </div>
+
+      <!-- ─── Sensor Gauge: Motion ─── -->
+      <div class="card sensor-card motion" id="sensorMotion">
+        <div class="card-title"><span class="icon">🏃</span> Motion (PIR)</div>
+        <div class="gauge-ring">
+          <svg viewBox="0 0 130 130">
+            <circle class="gauge-bg" cx="65" cy="65" r="60" />
+            <circle class="gauge-fill" id="gauge-fill-motion" cx="65" cy="65" r="60"
+              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
+          </svg>
+          <div class="gauge-value">
+            <span class="gauge-number" id="gauge-num-motion">0</span>
+            <span class="gauge-unit" id="gauge-unit-motion">IDLE</span>
+          </div>
+        </div>
+        <span class="sensor-label">Motion</span>
+        <div class="spike-indicator" id="spike-motion"></div>
+      </div>
+
+      <!-- ─── Sensor Gauge: Air Quality ─── -->
+      <div class="card sensor-card airquality" id="sensorAirQuality">
+        <div class="card-title"><span class="icon">🌫️</span> Air Quality</div>
+        <div class="gauge-ring">
+          <svg viewBox="0 0 130 130">
+            <circle class="gauge-bg" cx="65" cy="65" r="60" />
+            <circle class="gauge-fill" id="gauge-fill-airquality" cx="65" cy="65" r="60"
+              stroke-dasharray="376.99" stroke-dashoffset="376.99" />
+          </svg>
+          <div class="gauge-value">
+            <span class="gauge-number" id="gauge-num-airquality">400</span>
+            <span class="gauge-unit" id="gauge-unit-airquality">PPM</span>
+          </div>
+        </div>
+        <span class="sensor-label">Air Quality (VOC)</span>
+        <div class="spike-indicator" id="spike-airquality"></div>
+      </div>
+
+      <!-- ─── Tier Processing Indicator ─── -->
+      <div class="card tier-indicator" id="tierIndicator">
+        <div class="tier-node tier0 active" id="tier-node-0">
+          <div class="tier-circle">TIER 0</div>
+          <span class="tier-label">Always-On</span>
+          <span class="tier-power">~8.5 µW</span>
+        </div>
+
+        <div class="tier-connector" id="tier-conn-01"></div>
+
+        <div class="tier-node tier1" id="tier-node-1">
+          <div class="tier-circle">TIER 1</div>
+          <span class="tier-label">Event Proc.</span>
+          <span class="tier-power">~150 µW</span>
+        </div>
+
+        <div class="tier-connector" id="tier-conn-12"></div>
+
+        <div class="tier-node tier2" id="tier-node-2">
+          <div class="tier-circle">TIER 2</div>
+          <span class="tier-label">Deep Analysis</span>
+          <span class="tier-power">~2.2 mW</span>
+        </div>
+      </div>
+
+      <!-- ─── Spike Raster Plot ─── -->
+      <div class="card spike-raster-card" id="spikeRasterCard">
+        <div class="card-title"><span class="icon">⚡</span> Spike Raster Plot</div>
+        <div class="spike-raster-container">
+          <canvas class="spike-raster-canvas" id="spikeRasterCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- ─── Power Consumption ─── -->
+      <div class="card power-card" id="powerCard">
+        <div class="card-title"><span class="icon">🔋</span> Power Consumption</div>
+        <div class="power-display">
+          <div class="power-main">
+            <div class="power-value" id="powerValue">8.5</div>
+            <div class="power-unit">µW (current)</div>
+          </div>
+          <div class="power-chart-container">
+            <canvas class="power-chart-canvas" id="powerChartCanvas"></canvas>
+          </div>
+        </div>
+        <div class="power-stats">
+          <div class="power-stat">
+            <div class="power-stat-value" id="statTotalEnergy">0.00 mJ</div>
+            <div class="power-stat-label">Total Energy</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-stat-value" id="statAvgPower">0.0 µW</div>
+            <div class="power-stat-label">Average Power</div>
+          </div>
+          <div class="power-stat">
+            <div class="power-stat-value" id="statSavings">0.0%</div>
+            <div class="power-stat-label">Energy Savings</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SNN Topology Visualizer ─── -->
+      <div class="card topology-card" id="topologyCard">
+        <div class="card-title"><span class="icon">🔬</span> SNN Topology (4→8→3)</div>
+        <canvas class="topology-canvas" id="topologyCanvas"></canvas>
+      </div>
+
+      <!-- ─── Alert Feed ─── -->
+      <div class="card alert-feed-card" id="alertFeedCard">
+        <div class="card-title"><span class="icon">🚨</span> Event Log</div>
+        <div class="alert-feed" id="alertFeed">
+          <div class="alert-item normal">
+            <span class="alert-time">0s</span>
+            <span class="alert-severity normal">ready</span>
+            <span class="alert-message">NeuroEdge initialized. Press Start to begin simulation.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Membrane Potential Bars ─── -->
+      <div class="card membrane-card" id="membraneCard">
+        <div class="card-title"><span class="icon">📊</span> Membrane Potentials — All 15 Neurons</div>
+        <div class="membrane-bars" id="membraneBars"></div>
+      </div>
+
+      <!-- ─── Energy Savings Banner ─── -->
+      <div class="card savings-banner" id="savingsBanner">
+        <div>
+          <div class="savings-label">Neuromorphic Energy</div>
+          <div class="savings-detail" id="neuroEnergy">0.00 mJ</div>
+        </div>
+        <div class="vs-separator">vs</div>
+        <div>
+          <div class="savings-label">Always-On Energy</div>
+          <div class="savings-detail" id="alwaysOnEnergy">0.00 mJ</div>
+        </div>
+        <div>
+          <div class="savings-value" id="savingsPercent">0.0%</div>
+          <div class="savings-label">Power Savings</div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard-grid -->
+
+  </div><!-- /app-container -->
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
