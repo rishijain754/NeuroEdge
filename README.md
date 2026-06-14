@@ -1,4 +1,4 @@
-# 🧠 NeuroEdge — Neuromorphic Multi-Sensor Edge Device Simulator
+# NeuroEdge — Neuromorphic Multi-Sensor Edge Device Simulator
 
 A biologically-inspired edge computing simulator that processes multi-sensor data (temperature, humidity, motion, air quality) using **Spiking Neural Networks (SNN)** with microwatt-level power budgets. The system activates deeper processing tiers only when neural spikes detect relevant events — just like the human brain.
 
@@ -8,7 +8,7 @@ A biologically-inspired edge computing simulator that processes multi-sensor dat
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -34,7 +34,7 @@ A biologically-inspired edge computing simulator that processes multi-sensor dat
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Option 1: Web Dashboard (Zero Dependencies)
 
@@ -69,19 +69,19 @@ python power_tracker.py   # → Power budget analysis
 
 ---
 
-## 🎮 Dashboard Controls
+## Dashboard Controls
 
 | Control | Action |
 |---------|--------|
-| ▶ Start / ⏸ Pause | Toggle simulation |
-| ↺ Reset | Full system reset |
+| Start / ⏸ Pause | Toggle simulation |
+| Reset | Full system reset |
 | Scenario dropdown | Switch between Normal/Fire/Cooking/HVAC/Storm |
-| 🔥 Inject Fire | Force fire alarm scenario |
+| Inject Fire | Force fire alarm scenario |
 | Speed slider | 0.2x → 5x simulation speed |
 
 ---
 
-## 📊 Dashboard Sections
+## Dashboard Sections
 
 | Panel | What it Shows |
 |-------|---------------|
@@ -96,7 +96,7 @@ python power_tracker.py   # → Power budget analysis
 
 ---
 
-## 🔬 Neuromorphic Concepts Implemented
+##  Neuromorphic Concepts Implemented
 
 ### Leaky Integrate-and-Fire (LIF) Neurons
 - Membrane potential accumulates input current
@@ -120,7 +120,7 @@ python power_tracker.py   # → Power budget analysis
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 NeuroEdge/
@@ -138,7 +138,7 @@ NeuroEdge/
 
 ---
 
-## 🔧 Technology Stack
+##  Technology Stack
 
 | Component | Technology |
 |-----------|-----------|
@@ -150,7 +150,7 @@ NeuroEdge/
 
 ---
 
-## ⚡ Power Budget Model
+##  Power Budget Model
 
 | State | Power | Duration |
 |-------|-------|----------|
@@ -165,6 +165,6 @@ NeuroEdge/
 
 ---
 
-## 📝 License
+##  License
 
 Educational project — built for learning neuromorphic computing concepts.
