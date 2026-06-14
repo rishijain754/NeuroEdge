@@ -1,4 +1,4 @@
-# NeuroEdge
+# Neuro Edge
 
 **NeuroEdge** is a proof-of-concept neuromorphic engineering dashboard that demonstrates how event-driven Spiking Neural Networks (SNNs) can process complex, multi-modal sensor data with minimum energy consumption.
 
