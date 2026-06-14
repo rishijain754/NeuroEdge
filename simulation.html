@@ -150,6 +150,7 @@ body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:1
 <!-- ═══ TOPBAR ═══ -->
 <div class="topbar">
   <div class="topbar-brand">
+    <button class="tbtn" onclick="window.location.href='index.html'" style="margin-right:12px; border-color:var(--border);">← Back to Dashboard</button>
     <div class="logo">⚡</div>NeuroEdge Simulator<span class="chip">v3 · SNN Engine</span>
   </div>
   <div class="topbar-center">
@@ -370,6 +371,26 @@ let pirActive = false, manualMode = false;
 let lastTime = 0, accumulator = 0;
 const ledState = { g: false, y: false, r: false, buz: false };
 const TICK_INTERVAL = 500;
+
+// ─── Sync Channel ───
+const syncChannel = new BroadcastChannel('neuroedge_sync');
+syncChannel.onmessage = (e) => {
+  const msg = e.data;
+  if (msg.cmd === 'start' && !running) toggleSim(true);
+  if (msg.cmd === 'stop' && running) toggleSim(true);
+  if (msg.cmd === 'reset') resetAll(true);
+  if (msg.cmd === 'set_scenario') {
+    document.getElementById('scenarioSel').value = msg.val;
+    sensorEngine.setScenario(msg.val);
+    manualMode = false;
+    logS(`Sync: Scenario ${msg.val.replace(/_/g,' ')}`, 's-ok');
+  }
+  if (msg.cmd === 'set_speed') {
+    document.getElementById('slSpeed').value = msg.val;
+    speed = parseFloat(msg.val);
+    document.getElementById('vSpeed').innerText = speed.toFixed(1) + '×';
+  }
+};
 
 
 // Canvas
@@ -627,7 +648,7 @@ wrap.addEventListener('drop',e=>{
 // ══════════════════════════════════════════════════════════════
 // SIMULATION ENGINE (uses real SensorEngine + NeuroCore)
 // ══════════════════════════════════════════════════════════════
-function toggleSim() {
+function toggleSim(fromSync = false) {
   running=!running;
   const btn=document.getElementById('btnRun');
   const pip=document.getElementById('pip');
@@ -645,6 +666,9 @@ function toggleSim() {
     logS('System stopped.','s-warn');
     setLCD('NeuroEdge v3.0  ','Status: OFFLINE ');
     updateActuators(0,false);
+  }
+  if (!fromSync) {
+    syncChannel.postMessage({ cmd: running ? 'start' : 'stop' });
   }
 }
 
@@ -768,17 +792,19 @@ function pirUp(){pirActive=false;document.getElementById('pirBtn').classList.rem
 document.getElementById('slSpeed').addEventListener('input',e=>{
   speed=parseFloat(e.target.value);
   document.getElementById('vSpeed').innerText=speed.toFixed(1)+'×';
+  syncChannel.postMessage({ cmd: 'set_speed', val: speed });
 });
 document.getElementById('scenarioSel').addEventListener('change',e=>{
   sensorEngine.setScenario(e.target.value);
   manualMode=false;
   logS(`Scenario: ${e.target.value.replace(/_/g,' ')}`,'s-ok');
+  syncChannel.postMessage({ cmd: 'set_scenario', val: e.target.value });
 });
 
 
 
-function resetAll(){
-  if(running)toggleSim();
+function resetAll(fromSync = false) {
+  if(running)toggleSim(fromSync);
   sensorEngine=new SensorEngine();neuroCore=new NeuroCore();
   tickCount=0;manualMode=false;pirActive=false;
   buildLayout();fitView();
@@ -790,6 +816,7 @@ function resetAll(){
   setLCD('NeuroEdge v3.0  ','Status: OFFLINE ');
   updateActuators(0,false);
   logS('System reset. Default circuit loaded.','s-info');
+  if (!fromSync) syncChannel.postMessage({ cmd: 'reset' });
 }
 
 function logS(msg,cls='s-info'){
