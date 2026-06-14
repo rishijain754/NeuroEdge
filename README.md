@@ -17,7 +17,7 @@ The project has two ways to experience it:
 - **Neural Event Log:** A scrollable serial-style feed of every SNN event — spikes, tier transitions, and classifications.
 - **Neuron Heat Strip:** Firing intensity display for all input and hidden layer neurons.
 - **Hardware Simulator View:** Drag-and-drop virtual circuit builder with live LCD, LED, and Buzzer output indicators.
-- **Collapsible Sidebar:** Navigation sidebar that collapses to icon-only mode.
+- **Collapsible Sidebar:** Navigation sidebar that collapses to icon-only mode
 
 ---
 
@@ -49,7 +49,7 @@ NeuroEdge/
 
 ---
 
-## Quick Start — UI Dashboard
+## Quick Start—UI Dashboard
 
 No installation, no build step required.
 
@@ -86,7 +86,7 @@ Flash the firmware to a real ESP32 to run NeuroEdge on actual sensors.
 | Green LED | 1 | Status indicator |
 | Red LED | 1 | Alert indicator |
 | 220Ω Resistors | 2 | For LEDs |
-| Breadboard + Jumper Wires | — | — |
+| Breadboard + Jumper Wires | — | — 
 
 ### Wiring
 
