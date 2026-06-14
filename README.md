@@ -3,12 +3,12 @@
 **NeuroEdge** is a proof-of-concept neuromorphic engineering dashboard that demonstrates how event-driven Spiking Neural Networks (SNNs) can process complex, multi-modal sensor data with minimum energy consumption.
 
 The project has two ways to experience it:
-- **[Quick Start](#-quick-start-ui-dashboard)** — Open the web dashboard in a browser. No hardware needed.
+- **[Quick Start](https://rishijain754.github.io/NeuroEdge/)** — Open the web dashboard in a browser. No hardware needed.
 - **[Physical Hardware](#️-physical-hardware-esp32-setup)** — Flash an ESP32 and build the real circuit.
 
 ---
 
-## ⚡ Features
+##  Features
 
 - **Tiered Neural Pipeline:** A Tier-0 → Tier-2 architecture that only escalates compute when genuine spike events are detected.
 - **Live Membrane Potential Chart:** Real-time bar chart of each neuron's membrane voltage, updated every simulation tick.
@@ -21,7 +21,7 @@ The project has two ways to experience it:
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -34,7 +34,7 @@ The project has two ways to experience it:
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 NeuroEdge/
@@ -49,7 +49,7 @@ NeuroEdge/
 
 ---
 
-## 🖥️ Quick Start — UI Dashboard
+## Quick Start — UI Dashboard
 
 No installation, no build step required.
 
@@ -65,11 +65,11 @@ No installation, no build step required.
 3. **Navigate to the Simulator:**
    Click **"02 Simulator"** in the left sidebar or open `simulation.html` directly.
 
-> 💡 **Tip:** You can try the full sensor simulation — adjusting temperature, humidity, air quality, and triggering PIR motion events — entirely in the browser via **`simulation.html`**, without any physical hardware.
+> **Tip:** You can try the full sensor simulation — adjusting temperature, humidity, air quality, and triggering PIR motion events — entirely in the browser via **`simulation.html`**, without any physical hardware.
 
 ---
 
-## ⚙️ Physical Hardware — ESP32 Setup
+## Physical Hardware — ESP32 Setup
 
 Flash the firmware to a real ESP32 to run NeuroEdge on actual sensors.
 
@@ -141,7 +141,7 @@ Open `Tools > Serial Monitor`, set baud rate to **115200**. You will see live ou
 
 ---
 
-## 🔬 Virtual Testing with Wokwi
+## Virtual Testing with Wokwi
 
 If you don't have the hardware yet, you can simulate the full circuit in your browser using [Wokwi](https://wokwi.com/).
 
@@ -150,16 +150,16 @@ If you don't have the hardware yet, you can simulate the full circuit in your br
 3. Click the `diagram.json` tab and replace its contents with `wokwi_diagram.json`.
 4. Click ▶ **Start Simulation**.
 
-> 💡 **You can also use `simulation.html`** in the browser as a high-level visual alternative to Wokwi — it simulates the same sensor pipeline and neural events without needing Wokwi or any ESP32 at all.
+>  **You can also use `simulation.html`** in the browser as a high-level visual alternative to Wokwi — it simulates the same sensor pipeline and neural events without needing Wokwi or any ESP32 at all.
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 > *Add screenshots here after deployment.*
 
 ---
 
-## 📜 License
+##  License
 
 Distributed under the MIT License. See `LICENSE` for more information.
