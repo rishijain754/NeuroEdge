@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "author": "NeuroEdge",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 160,
+      "left": 240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": 40,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot1",
+      "top": 200,
+      "left": 0,
+      "attrs": { "label": "MQ135 (Air Quality)" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "pir1",
+      "top": 380,
+      "left": 0,
+      "attrs": { "color": "green", "label": "PIR Motion" }
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd1",
+      "top": 40,
+      "left": 480,
+      "attrs": { "pins": "i2c", "i2cAddress": "0x27" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_green",
+      "top": 300,
+      "left": 560,
+      "attrs": { "color": "green", "label": "Status" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 342,
+      "left": 560,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_red",
+      "top": 300,
+      "left": 620,
+      "attrs": { "color": "red", "label": "Alert" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 342,
+      "left": 620,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buz1",
+      "top": 440,
+      "left": 480,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["esp32:GND.1", "dht1:GND",    "black",  []],
+    ["esp32:3V3",   "dht1:VCC",    "red",    []],
+    ["esp32:D15",   "dht1:SDA",    "green",  []],
+
+    ["esp32:GND.2", "pot1:GND",    "black",  []],
+    ["esp32:3V3",   "pot1:VCC",    "red",    []],
+    ["esp32:D34",   "pot1:SIG",    "yellow", []],
+
+    ["esp32:GND.3", "pir1:2.l",    "black",  []],
+    ["esp32:3V3",   "pir1:1.l",    "red",    []],
+    ["esp32:D27",   "pir1:2.r",    "green",  []],
+
+    ["esp32:D21",   "lcd1:SDA",    "blue",   []],
+    ["esp32:D22",   "lcd1:SCL",    "orange", []],
+    ["esp32:GND.1", "lcd1:GND",    "black",  []],
+    ["esp32:3V3",   "lcd1:VCC",    "red",    []],
+
+    ["esp32:D26",   "r1:1",        "green",  []],
+    ["r1:2",        "led_green:A", "green",  []],
+    ["led_green:K", "esp32:GND.1", "black",  []],
+
+    ["esp32:D2",    "r2:1",        "red",    []],
+    ["r2:2",        "led_red:A",   "red",    []],
+    ["led_red:K",   "esp32:GND.1", "black",  []],
+
+    ["esp32:D25",   "buz1:1",      "purple", []],
+    ["buz1:2",      "esp32:GND.1", "black",  []]
+  ]
+}
