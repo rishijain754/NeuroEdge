@@ -1,160 +1,89 @@
-# NeuroEdge — Neuromorphic Multi-Sensor Edge Device Simulator
+# NeuroEdge
 
-A biologically-inspired edge computing simulator that processes multi-sensor data (temperature, humidity, motion, air quality) using **Spiking Neural Networks (SNN)** with microwatt-level power budgets. The system activates deeper processing tiers only when neural spikes detect relevant events — just like the human brain.
+**NeuroEdge** is a proof-of-concept neuromorphic engineering dashboard and simulation environment. It demonstrates how event-driven Spiking Neural Networks (SNNs) can be utilized on ultra-low-power edge devices to process complex, multi-modal sensor data with minimal compute overhead.
 
-![Architecture](https://img.shields.io/badge/Architecture-3--Tier_Neuromorphic-blueviolet?style=for-the-badge)
-![Power](https://img.shields.io/badge/Power-~8.5_µW_Baseline-green?style=for-the-badge)
-![Sensors](https://img.shields.io/badge/Sensors-4_Channel-orange?style=for-the-badge)
+The project features a dual-interface architecture: a live "Control Center" dashboard for monitoring telemetry, and a "Simulator" for testing compound anomaly detection in a virtualized hardware environment.
 
----
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────────┐
-│  TIER 0 — Always-On Sensor Hub (~8.5 µW)        │
-│  • ADC reads at 1 Hz                             │
-│  • LIF (Leaky Integrate-and-Fire) threshold      │
-│  • Spikes emitted on significant change          │
-└──────────────┬───────────────────────────────────┘
-               │ Spike event
-┌──────────────▼───────────────────────────────────┐
-│  TIER 1 — Event Processor (~150 µW, 20ms burst)  │
-│  • 4→8→3 SNN pattern recognition                 │
-│  • Temporal spike encoding                        │
-│  • Classify: Normal / Anomaly / Alert            │
-└──────────────┬───────────────────────────────────┘
-               │ Alert condition
-┌──────────────▼───────────────────────────────────┐
-│  TIER 2 — Deep Analysis (~2.2 mW, 100ms burst)   │
-│  • Full context-aware inference                   │
-│  • Alert generation & logging                     │
-└──────────────────────────────────────────────────┘
-```
+![NeuroEdge UI Preview](https://via.placeholder.com/1000x500.png?text=NeuroEdge+Dashboard+Preview) *(Replace with actual screenshot)*
 
 ---
 
-## Quick Start
+## ⚡ Features
 
-### Option 1: Web Dashboard (Zero Dependencies)
-
-Simply open `index.html` in any modern browser:
-
-```
-# Windows
-start index.html
-
-# macOS / Linux
-open index.html
-```
-
-The entire neuromorphic simulation runs in JavaScript — no server needed!
-
-### Option 2: Python Backend (Standalone)
-
-```bash
-pip install numpy
-python sensor_engine.py   # → 60s of synthetic sensor data
-python neuro_core.py      # → 100-tick SNN simulation
-python power_tracker.py   # → Power budget analysis
-```
-
-## Dashboard Controls
-
-| Control | Action |
-|---------|--------|
-| Start / ⏸ Pause | Toggle simulation |
-| Reset | Full system reset |
-| Scenario dropdown | Switch between Normal/Fire/Cooking/HVAC/Storm |
-| Inject Fire | Force fire alarm scenario |
-| Speed slider | 0.2x → 5x simulation speed |
+- **Neuromorphic SNN Core:** A custom Leaky Integrate-and-Fire (LIF) network with homeostatic plasticity, built entirely in Python/NumPy.
+- **Event-Driven Architecture:** Implements a tiered processing pipeline (Tier-0 to Tier-2) that only consumes power when anomalous sensor spikes occur.
+- **Live Telemetry Dashboard:** A Vanilla JS/Canvas-based frontend rendering real-time membrane potentials, spike raster plots, and network topology.
+- **Tactical UI/UX:** A rigorously designed, high-contrast "Tactical Instrumentation" interface built on an 8px grid, utilizing deep slate and cyan aesthetics typical of professional engineering software.
+- **Hardware Simulation:** Includes virtualized Arduino/ESP32 sketches (`.ino`) and Wokwi definitions for testing physical micro-controller logic.
 
 ---
 
-## Dashboard Sections
+## 🛠️ Tech Stack
 
-| Panel | What it Shows |
-|-------|---------------|
-| **Sensor Gauges** | Real-time circular gauges for all 4 sensors with spike indicators |
-| **Tier Indicator** | Glowing rings showing which processing tier is active |
-| **Spike Raster** | Scrolling dot plot of neural spikes over time (4 channels) |
-| **Power Meter** | Current µW consumption with historical chart |
-| **SNN Topology** | Animated 4→8→3 neural network with active connections |
-| **Event Log** | Timestamped alerts with severity classification |
-| **Membrane Bars** | Live membrane potentials for all 15 neurons |
-| **Savings Banner** | Neuromorphic vs always-on energy comparison |
+**Frontend:**
+- HTML5 / Vanilla CSS3 (Strict Design Tokens, Custom 8px Grid System)
+- Vanilla JavaScript (ES6+)
+- HTML5 `<canvas>` API for high-performance rendering of neural graphs
 
----
+**Backend & Simulation Engines:**
+- Python 3.9+
+- NumPy (Matrix operations and LIF neuron simulation)
 
-##  Neuromorphic Concepts Implemented
-
-### Leaky Integrate-and-Fire (LIF) Neurons
-- Membrane potential accumulates input current
-- Leaks by decay factor each tick (τ = 0.9)
-- Fires spike when threshold reached → resets + refractory period
-
-### Spike Encoding
-- **Rate coding**: Higher sensor values → higher spike probability
-- **Delta encoding**: Spikes on significant sensor changes
-- **Combined**: Both strategies merged for robust event detection
-
-### Winner-Take-All (WTA) Output
-- 3 output neurons compete: Normal, Anomaly, Alert
-- Highest membrane potential wins classification
-
-### Homeostatic Plasticity
-- Firing rate monitored across 50-tick windows
-- Over-active neurons: threshold increased by 5%
-- Under-active neurons: threshold decreased by 5%
-- Prevents alarm fatigue and dead neurons
+**Embedded / Hardware Simulation:**
+- C++ (Arduino Framework)
+- Wokwi Virtual Environment (`wokwi_diagram.json`)
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
-```
+```text
 NeuroEdge/
-├── index.html            ← Dashboard (open in browser)
-├── styles.css            ← Design system (dark neural theme)
-├── dashboard.js          ← Full JS simulation engine
-├── neuro_core.py         ← Python SNN implementation
-├── sensor_engine.py      ← Synthetic sensor data generator
-├── power_tracker.py      ← Power budget simulator
-├── wokwi_sketch.ino      ← ESP32 Arduino sketch for Wokwi
-├── wokwi_diagram.json    ← Wokwi circuit layout
-├── requirements.txt      ← Python dependencies (numpy)
-└── README.md             ← This file
+├── index.html           # Main Control Center Dashboard UI
+├── simulation.html      # Hardware Simulator & Component Testing UI
+├── styles.css           # Global design tokens and UI styles
+├── dashboard.js         # Core frontend logic and Canvas rendering
+├── neuro_core.py        # Python SNN simulation logic and LIF Neurons
+├── sensor_engine.py     # Python synthetic multi-sensor data generator
+├── power_tracker.py     # Python micro-watt power consumption simulator
+├── requirements.txt     # Python dependencies
+├── wokwi_sketch.ino     # C++ Arduino sketch for hardware simulation
+├── wokwi_diagram.json   # Wokwi circuit definition for ESP32
+└── README.md            # Project documentation (You are here)
 ```
 
 ---
 
-##  Technology Stack
+## 🚀 Setup & Installation
 
-| Component | Technology |
-|-----------|-----------|
-| Dashboard | Vanilla HTML/CSS/JS + Canvas API |
-| SNN Engine | Pure JavaScript (browser) + Python (standalone) |
-| Design | Glassmorphism, CSS animations, dark theme |
-| Virtual HW | Wokwi.com (ESP32 simulator) |
-| Fonts | Inter + JetBrains Mono (Google Fonts) |
+### 1. Frontend (UI Dashboard)
+The frontend requires no build steps or bundlers. 
+1. Clone the repository.
+2. Open `index.html` or `simulation.html` directly in any modern web browser (Chrome, Firefox, Safari, Edge).
+
+### 2. Backend (Python SNN Engine)
+To run the SNN simulation logic and sensor generation scripts:
+1. Ensure Python 3.9+ is installed.
+2. Open a terminal in the project directory.
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Run the individual engine tests:
+   ```bash
+   python neuro_core.py
+   ```
+
+### 3. Hardware Simulation (Wokwi)
+To test the embedded C++ logic:
+1. Navigate to [Wokwi.com](https://wokwi.com/).
+2. Create a new ESP32 project.
+3. Copy the contents of `wokwi_sketch.ino` into the code editor.
+4. Replace the default `diagram.json` with the contents of `wokwi_diagram.json`.
+5. Click "Start Simulation".
 
 ---
 
-##  Power Budget Model
+## 📜 License
 
-| State | Power | Duration |
-|-------|-------|----------|
-| Deep Sleep | 0.5 µW | Between reads |
-| Tier-0 (ADC + LIF) | 8.5 µW | Always on |
-| Tier-1 (SNN inference) | 150 µW | ~20 ms burst |
-| Tier-2 (Deep analysis) | 2,200 µW | ~100 ms burst |
-| Sensor ADC read | 3.0 µW | Per sensor |
-| Spike propagation | 0.1 µW | Per spike |
-
-**Typical savings: >90% vs always-on Tier-2 processing**
-
----
-
-##  License
-
-Educational project — built for learning neuromorphic computing concepts.
+Distributed under the MIT License. See `LICENSE` for more information.
