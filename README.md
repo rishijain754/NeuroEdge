@@ -59,16 +59,6 @@ python neuro_core.py      # → 100-tick SNN simulation
 python power_tracker.py   # → Power budget analysis
 ```
 
-### Option 3: Virtual Arduino (Wokwi)
-
-1. Go to [wokwi.com](https://wokwi.com)
-2. Create a new ESP32 project
-3. Replace `sketch.ino` with contents of `wokwi_sketch.ino`
-4. Replace `diagram.json` with contents of `wokwi_diagram.json`
-5. Click ▶ Run — watch Serial monitor for spike events
-
----
-
 ## Dashboard Controls
 
 | Control | Action |
