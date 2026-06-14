@@ -126,6 +126,23 @@ body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:1
 .snn-bar-track{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden;}
 .snn-bar-fill{height:100%;border-radius:3px;transition:width .1s;}
 .snn-val{width:40px;text-align:right;color:var(--text2);font-size:9px;}
+
+/* ── Code Viewer ─────────────── */
+.code-panel{display:flex;flex-direction:column;height:100%;padding:0;}
+.code-toolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;}
+.code-title{font-size:10px;font-weight:600;color:var(--text2);font-family:var(--mono);}
+.code-chip{font-size:9px;padding:2px 8px;border-radius:4px;background:rgba(56,139,253,.12);color:var(--accent);border:1px solid rgba(56,139,253,.25);font-family:var(--mono);}
+.copy-btn{font-size:10px;padding:4px 10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-family:var(--sans);font-weight:600;transition:all .15s;}
+.copy-btn:hover{background:var(--border);color:var(--text1);}
+.copy-btn.copied{background:rgba(63,185,80,.1);border-color:var(--green);color:var(--green);}
+.code-scroll{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.code-block{margin:0;padding:10px 0;background:transparent;font-family:var(--mono);font-size:10px;line-height:1.7;counter-reset:line;}
+.code-line{display:flex;align-items:flex-start;padding:0 10px;min-height:17px;transition:background .1s;}
+.code-line:hover{background:rgba(255,255,255,.025);}
+.ln{min-width:28px;color:var(--text3);user-select:none;text-align:right;padding-right:10px;flex-shrink:0;font-size:9px;padding-top:1px;}
+.c-kw{color:#c792ea;}.c-type{color:#80cbc4;}.c-fn{color:#82aaff;}.c-str{color:#c3e88d;}
+.c-num{color:#f78c6c;}.c-cmt{color:#546e7a;font-style:italic;}.c-pp{color:#ffcb6b;}
+.c-var{color:#eeffff;}.c-op{color:#89ddff;}.c-sec{color:var(--text3);background:rgba(255,255,255,.03);display:flex;width:100%;padding:4px 10px;margin:2px 0;border-left:2px solid var(--border);}
 </style>
 </head>
 <body>
@@ -176,6 +193,7 @@ body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:1
     <div class="rtabs">
       <div class="rtab active" onclick="switchTab('controls',this)">Controls</div>
       <div class="rtab" onclick="switchTab('serial',this)">Serial</div>
+      <div class="rtab" onclick="switchTab('code',this)">Code</div>
     </div>
 
     <!-- CONTROLS TAB -->
@@ -238,6 +256,18 @@ body{background:var(--bg);color:var(--text1);font-family:var(--sans);font-size:1
     <!-- SERIAL TAB -->
     <div class="rpanel-content" id="tab-serial" style="display:none;padding:8px;height:100%;">
       <div class="serial-out" id="serialOut" style="height:calc(100% - 10px);"></div>
+    </div>
+
+    <!-- CODE TAB -->
+    <div class="rpanel-content code-panel" id="tab-code" style="display:none;">
+      <div class="code-toolbar">
+        <span class="code-title">📄 neuro_edge.ino</span>
+        <span class="code-chip">ESP32 · Arduino</span>
+        <button class="copy-btn" id="copyBtn" onclick="copyCode()">⎘ Copy</button>
+      </div>
+      <div class="code-scroll">
+        <pre class="code-block" id="codeBlock"></pre>
+      </div>
     </div>
   </div>
 </div>
@@ -791,10 +821,256 @@ function buildLibrary(){
 }
 
 // ══════════════════════════════════════════════════════════════
+// ESP32 ARDUINO SKETCH SOURCE
+// ══════════════════════════════════════════════════════════════
+const ESP32_SKETCH = `// NeuroEdge — ESP32 Firmware
+// Neuromorphic Edge Device · v2.0
+// Board: ESP32 DevKit V1  Baud: 115200
+
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+
+// ── Pin Definitions ─────────────────────────
+#define PIN_PIR       14   // HC-SR501 digital out
+#define PIN_DHT       4    // DHT22 data
+#define PIN_MQ135_AO  34   // MQ-135 analog out
+#define PIN_LED_GREEN 12   // Status LED green
+#define PIN_LED_YELLOW 26  // Status LED yellow
+#define PIN_LED_RED   25   // Status LED red
+#define PIN_BUZZER    27   // 2N2222 base (via 1kΩ)
+#define DHT_TYPE      DHT22
+
+// ── Hardware Objects ─────────────────────────
+DHT dht(PIN_DHT, DHT_TYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ── LIF Neuron ───────────────────────────────
+struct LIFNeuron {
+  float potential   = 0.0f;
+  float threshold   = 1.0f;
+  float decay       = 0.9f;
+  int   refractory  = 0;
+  int   refPeriod   = 3;
+
+  bool step(float current) {
+    if (refractory > 0) {
+      refractory--;
+      potential *= 0.5f;
+      return false;
+    }
+    potential = decay * potential + current;
+    if (potential >= threshold) {
+      potential = 0;
+      refractory = refPeriod;
+      return true;
+    }
+    return false;
+  }
+  void reset() { potential = 0; refractory = 0; }
+};
+
+// ── SNN: 4 input, 8 hidden, 3 output ─────────
+LIFNeuron inputN[4], hiddenN[8], outputN[3];
+
+const float wIH[4][8] = {
+  {0.7,0.6,0.1,0.0,0.1,0.0,0.2,0.1},
+  {0.1,0.0,0.7,0.6,0.0,0.1,0.1,0.2},
+  {0.0,0.2,0.0,0.1,0.8,0.7,0.1,0.0},
+  {0.2,0.1,0.1,0.2,0.0,0.1,0.7,0.8}
+};
+const float wHO[8][3] = {
+  {0.5,0.3,0.1},{0.4,0.4,0.2},{0.5,0.3,0.1},
+  {0.4,0.4,0.2},{0.1,0.5,0.6},{0.2,0.4,0.5},
+  {0.1,0.4,0.7},{0.2,0.3,0.6}
+};
+
+// Spike encoder: rate + delta encoding
+float prevTemp=25, prevHumid=55, prevAirQ=400;
+
+float encode(float val, float mn, float mx, float prev, float dt) {
+  float norm = constrain((val - mn) / (mx - mn), 0.0f, 1.0f);
+  float rate  = (random(1000) < (int)(norm * 600)) ? 1.0f : 0.0f;
+  float delta = (abs(val - prev) > dt)             ? 1.0f : 0.0f;
+  return min(1.0f, rate * 0.4f + delta * 0.8f);
+}
+
+// Forward pass — returns tier 0/1/2
+int snnForward(float temp, float humid, float motion, float airQ) {
+  float inputs[4] = {
+    encode(temp,  10, 60,  prevTemp,  2.0f),
+    encode(humid, 20, 95,  prevHumid, 5.0f),
+    motion,
+    encode(airQ,  200, 1500, prevAirQ, 50.0f)
+  };
+  prevTemp = temp; prevHumid = humid; prevAirQ = airQ;
+
+  // Input layer
+  int iSpike[4];
+  for (int i = 0; i < 4; i++)
+    iSpike[i] = inputN[i].step(inputs[i]) ? 1 : 0;
+
+  // Hidden layer
+  int hSpike[8];
+  for (int h = 0; h < 8; h++) {
+    float cur = 0;
+    for (int i = 0; i < 4; i++) cur += iSpike[i] * wIH[i][h];
+    hSpike[h] = hiddenN[h].step(cur) ? 1 : 0;
+  }
+
+  // Output layer — pick max potential
+  float oPot[3] = {0, 0, 0};
+  for (int o = 0; o < 3; o++) {
+    float cur = 0;
+    for (int h = 0; h < 8; h++) cur += hSpike[h] * wHO[h][o];
+    outputN[o].step(cur);
+    oPot[o] = outputN[o].potential;
+  }
+  int cls = 0;
+  if (oPot[1] > oPot[cls]) cls = 1;
+  if (oPot[2] > oPot[cls]) cls = 2;
+  return cls;  // 0=normal 1=anomaly 2=alert
+}
+
+// ── Power Tracking ───────────────────────────
+const float PWR_T0 = 8.5f, PWR_T1 = 150.0f, PWR_T2 = 2200.0f;
+float totalEnergy_uJ = 0;
+unsigned long lastTick = 0;
+
+// ── Actuators ────────────────────────────────
+void setTier(int tier) {
+  digitalWrite(PIN_LED_GREEN,  tier == 0 ? HIGH : LOW);
+  digitalWrite(PIN_LED_YELLOW, tier == 1 ? HIGH : LOW);
+  digitalWrite(PIN_LED_RED,    tier >= 2 ? HIGH : LOW);
+  digitalWrite(PIN_BUZZER,     tier >= 2 ? HIGH : LOW);
+}
+
+void updateLCD(float temp, float humid, int tier) {
+  const char* tierMsg[] = {"Status: Normal  ",
+                           "Tier1: Anomaly  ",
+                           "ALERT: T2 ACTIVE"};
+  lcd.setCursor(0, 0);
+  lcd.print("T:"); lcd.print(temp, 1);
+  lcd.print("C H:"); lcd.print((int)humid); lcd.print("%  ");
+  lcd.setCursor(0, 1);
+  lcd.print(tierMsg[tier]);
+}
+
+// ── Setup ─────────────────────────────────────
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  Wire.begin(21, 22);   // SDA=21 SCL=22
+  lcd.init();
+  lcd.backlight();
+  lcd.print("NeuroEdge v2.0");
+  lcd.setCursor(0,1);
+  lcd.print("Booting SNN...");
+
+  pinMode(PIN_PIR,        INPUT);
+  pinMode(PIN_LED_GREEN,  OUTPUT);
+  pinMode(PIN_LED_YELLOW, OUTPUT);
+  pinMode(PIN_LED_RED,    OUTPUT);
+  pinMode(PIN_BUZZER,     OUTPUT);
+
+  // Reset all neurons
+  for (auto& n : inputN)  n.reset();
+  for (auto& n : hiddenN) n.reset();
+  for (auto& n : outputN) n.reset();
+
+  delay(2000);
+  lcd.clear();
+  lastTick = millis();
+  Serial.println("[BOOT] NeuroEdge ready");
+}
+
+// ── Main Loop ────────────────────────────────
+void loop() {
+  unsigned long now = millis();
+  if (now - lastTick < 500) return;   // 500 ms tick
+  float dt = (now - lastTick) / 1000.0f;
+  lastTick = now;
+
+  // Read sensors
+  float temp  = dht.readTemperature();
+  float humid = dht.readHumidity();
+  int   motion = digitalRead(PIN_PIR);
+  int   rawAQ  = analogRead(PIN_MQ135_AO);
+  float airQ   = map(rawAQ, 0, 4095, 200, 2000);  // ppm approx
+
+  if (isnan(temp) || isnan(humid)) {
+    Serial.println("[WARN] DHT read failed");
+    return;
+  }
+
+  // SNN inference
+  int tier = snnForward(temp, humid, (float)motion, airQ);
+
+  // Power budget
+  float pwr = PWR_T0 + (tier >= 1 ? PWR_T1 : 0)
+                      + (tier >= 2 ? PWR_T2 : 0);
+  totalEnergy_uJ += pwr * dt;
+
+  // Actuators
+  setTier(tier);
+  updateLCD(temp, humid, tier);
+
+  // Serial log
+  Serial.printf("[T%d] %.1fC %.0f%% PIR:%d AQ:%.0fppm %.1fuW\\n",
+                tier, temp, humid, motion, airQ, pwr);
+}`;
+
+// ── Syntax Highlighter ───────────────────────
+function syntaxHighlight(code) {
+  const keywords = /\b(if|else|for|while|return|void|int|float|bool|struct|const|auto|true|false|break|continue|class|new|delete|include|define|pragma|nullptr)\b/g;
+  const types    = /\b(String|DHT|LiquidCrystal_I2C|LIFNeuron|uint8_t|uint16_t|uint32_t|unsigned|long|short|char|byte|boolean)\b/g;
+  const fns      = /\b(setup|loop|Serial|pinMode|digitalWrite|digitalRead|analogRead|millis|delay|map|constrain|min|max|abs|random|Wire|begin|print|println|printf|setCursor|backlight|init|clear|readTemperature|readHumidity|isnan|step|reset|snnForward|encode|setTier|updateLCD)\b/g;
+  const nums     = /\b(\d+\.?\d*f?)\b/g;
+  const strs     = /"([^"]*)"/g;
+  const cmts     = /(\/\/[^\n]*)/g;
+  const preproc  = /(#\w+)/g;
+
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(cmts,    '<span class="c-cmt">$1</span>')
+    .replace(preproc, '<span class="c-pp">$1</span>')
+    .replace(strs,    '<span class="c-str">"$1"</span>')
+    .replace(keywords,'<span class="c-kw">$&</span>')
+    .replace(types,   '<span class="c-type">$&</span>')
+    .replace(fns,     '<span class="c-fn">$&</span>')
+    .replace(nums,    '<span class="c-num">$&</span>');
+}
+
+function buildCodeView() {
+  const block = document.getElementById('codeBlock');
+  const lines = ESP32_SKETCH.split('\n');
+  block.innerHTML = lines.map((line, i) => {
+    const ln = i + 1;
+    const isSection = line.trim().startsWith('//') && line.includes('──');
+    const content = syntaxHighlight(line);
+    if (isSection) {
+      return `<div class="code-line"><span class="ln">${ln}</span><span class="c-sec">${content}</span></div>`;
+    }
+    return `<div class="code-line"><span class="ln">${ln}</span><span class="c-var">${content}</span></div>`;
+  }).join('');
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(ESP32_SKETCH).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════
 buildLibrary();
 buildLayout();
+buildCodeView();
 resizeCanvas();
 fitView();
 render();
